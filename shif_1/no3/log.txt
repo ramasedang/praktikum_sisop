@@ -1,0 +1,7 @@
+23/02/27 21:09:48 REGISTER: INFO User test registered successfully
+23/02/27 21:10:18 REGISTER: INFO User test registered successfully
+23/02/27 21:13:01 REGISTER: INFO User test registered successfully
+23/02/27 21:13:45 REGISTER: INFO User test registered successfully
+23/02/27 21:16:53 REGISTER: INFO User etst registered successfully
+23/02/27 21:17:34 REGISTER: INFO User test registered successfully
+23/02/27 21:18:48 REGISTER: ERROR User test already exists
