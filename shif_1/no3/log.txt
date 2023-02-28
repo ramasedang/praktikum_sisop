@@ -1,1 +1,4 @@
 23/02/28 09:58:12 REGISTER: INFO User test registered successfully
+23/02/28 12:37:38 REGISTER: INFO User ssudo registered successfully
+23/02/28 12:49:52 LOGIN: ERROR Failed login attempt on user ssudo
+23/02/28 12:50:25 LOGIN: INFO User ssudo logged in

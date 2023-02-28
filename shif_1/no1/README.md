@@ -1,4 +1,4 @@
-# soal-shift-sisop-modul-1-ITB07-2022
+# sisop-praktikum-modul-1-2023-mhfg-it14
 
 ## Laporan Resmi Modul 1 Praktikum Sistem Operasi 2023
 ---
