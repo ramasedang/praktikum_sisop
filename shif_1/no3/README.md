@@ -249,18 +249,23 @@ done
 ```
 ## Test output
 saat di run
+
 [![image](https://www.linkpicture.com/q/abdyusvdiua.png)](https://www.linkpicture.com/view.php?img=LPic63fd9267c7ed1870417813)
 
 Error saat salah satu kondisi password tidak terpenuhi
+
 [![image](https://www.linkpicture.com/q/Capture_885.png)](https://www.linkpicture.com/view.php?img=LPic63fd92be63d86825860864)
 
 Setelah register, user akan ditambahkan ke users/users.txt
+
 [![image](https://www.linkpicture.com/q/Capture_886.png)](https://www.linkpicture.com/view.php?img=LPic63fd9352e2a1f1325625848)
 
 Begitupula dengan log, log register akan tercatat pada file log
+
 [![image](https://www.linkpicture.com/q/Capture_887.png)](https://www.linkpicture.com/view.php?img=LPic63fd93e51ca54517175628)
 
 Berikut menjalankan fungsi login
+
 [![image](https://www.linkpicture.com/q/Capture_888.png)](https://www.linkpicture.com/view.php?img=LPic63fd96308a39c102323120)
 ## Kendala
 Kendala yang dialamu mungkin penggunaan syntax yang belum familiar terhadap penggunaan bash sehingga kami harus menyesuaikan syntax dan harus memperlajari syntax baru, Penulisan syntax yang cukup rumit juga menjadi kendala kami
