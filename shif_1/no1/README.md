@@ -158,9 +158,9 @@ bash log_decrypt.sh 06:36\ 28:02:2023.txt
 crontab -e
 ```
 ```bash 
-*/2 * * * * /Desktop/log_decrypt.sh
+*/2 * * * * /Desktop/log_encrypt.sh
 ```
-```*/2```menunjukkan interval waktu backup setiap 2 jam. Angka lainnya menunjukkan interval waktu dalam menit, jam, atau hari.File backup script memiliki izin eksekusi dengan menggunakan perintah ```chmod +x log_decrypt.sh``` 
+```*/2```menunjukkan interval waktu backup setiap 2 jam. Angka lainnya menunjukkan interval waktu dalam menit, jam, atau hari.File backup script memiliki izin eksekusi dengan menggunakan perintah ```chmod +x log_encrypt.sh``` 
 
 ## Source Code
 #### log_encrypt.sh
