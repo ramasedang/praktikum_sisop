@@ -221,4 +221,4 @@ echo -e "$decrypted" > "$decrypted_filename"
 ![dekripsi](https://user-images.githubusercontent.com/100351038/222177413-305bcae6-baaf-4e98-950e-84d8f8eeae65.png)
 
 ## Kendala
-Kesuliatan untuk melakukan enkripsi dan dekripsi dengan sistem cipher dengan menyesuaikan dengan jam sekarang. Dan, syslog yang dienkiripsi dan didekripsi sangat banyak sehingga waktu yang diperlukan untuk menjalankannya lama, sehingga perlu menghapus syslognya.
+Kesulitan untuk melakukan enkripsi dan dekripsi dengan sistem cipher dengan menyesuaikan dengan jam sekarang. Dan, syslog yang dienkiripsi dan didekripsi sangat banyak sehingga waktu yang diperlukan untuk menjalankannya lama, sehingga perlu menghapus syslognya.
