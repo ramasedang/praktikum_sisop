@@ -219,3 +219,6 @@ echo -e "$decrypted" > "$decrypted_filename"
 
 ![enkripsi](https://user-images.githubusercontent.com/100351038/222177319-9271884c-27f0-4057-bbe8-756d572559d6.png)
 ![dekripsi](https://user-images.githubusercontent.com/100351038/222177413-305bcae6-baaf-4e98-950e-84d8f8eeae65.png)
+
+## Kendala
+Kesuliatan untuk melakukan enkripsi dan dekripsi dengan sistem cipher dengan menyesuaikan dengan jam sekarang.
