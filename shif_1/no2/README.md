@@ -9,7 +9,6 @@ Inisialisasi jam saat ini dan set interval menjadi 10 jam
 ```shell
 #!/bin/bash
 HOUR=$(date + %H)
-INTERVAL=10
 
 ```
 
@@ -41,7 +40,6 @@ elif [ "$1" = "zip" ]; then
 ```
 Kemudian buat fungsi untuk melakukan zip setiap jam 00:00. 
 ```bash
-DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
 
 DEVIL_ZIP_COUNT=$(ls -l | grep -c "devil_[0-9]*\.zip")
 

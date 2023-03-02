@@ -3,9 +3,6 @@
 # Get the current hour
 HOUR=$(date +%H)
 
-# Set the download interval to 10 hours
-INTERVAL=10
-
 # Check if the current hour is 0 (midnight)
 if [ "$HOUR" -eq 0 ]; then
     # If it is, set the number of downloads to 1
