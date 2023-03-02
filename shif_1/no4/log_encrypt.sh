@@ -1,5 +1,6 @@
 #!/bin/bash
 jam=$(date +'%H')
+jam=${jam#0}
 syslog=$(cat /var/log/syslog)
 
 encrypted=""
