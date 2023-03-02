@@ -568,7 +568,7 @@ crontab -e
 ```bash 
 0 */2 * * * home/kali/Desktop/log_encrypt.sh
 ```
-```*/2```menunjukkan interval waktu backup setiap 2 jam. Angka lainnya menunjukkan interval waktu dalam menit, jam, atau hari.File backup script memiliki izin eksekusi dengan menggunakan perintah ```chmod +x log_encrypt.sh``` 
+```0``` pada menit ke 0 ```*/2```menunjukkan interval waktu backup setiap 2 jam. Angka lainnya menunjukkan interval waktu dalam menit, jam, atau hari.File backup script memiliki izin eksekusi dengan menggunakan perintah ```chmod +x log_encrypt.sh``` 
 
 ## Source Code
 #### log_encrypt.sh
