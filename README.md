@@ -68,6 +68,413 @@ grep -i "keren" list_univ.csv | awk -F "," '{print $1","$2","$3}'
 ## Kendala
 Penggunaan awk yang belum familiar sehingga perlu memperlajarinya, dan juga sedikit kebingungan saat sorting ascending dan descending
 
+# Soal 2
+# Analisa Soal
+
+Diminta untuk membuat script dimana sebuah gambar akan didownload sebanyak n kali selama 10 jam, dengan n adalah jam saat script dijalankan. Contoh: script dijalankan pukul 13:20, maka dilakukan download gambar sebanyak 13 kali. Selain itu diminta untuk melakukan zip terhadap gambar yang sudah didownload setiap 1 hari, atau setiap pukul 00:00 dengan format yang ditentukan.
+
+## Cara pengerjaan
+
+Inisialisasi jam saat ini dan set interval menjadi 10 jam
+```shell
+#!/bin/bash
+HOUR=$(date + %H)
+
+```
+
+Set agar download dilakukan sebanyak n kali yaitu jam saat ini, dan lakukan download sekali apabila saat ini jam 00:00
+
+```bash
+if [ "$HOUR" -eq 0 ]; then
+    # Kalau sedang jam 00:00, set download menjadi 1
+    DOWNLOADS=1
+else
+    # Kalau tidak download sebanyak jam saat ini
+    DOWNLOADS="$HOUR"
+fi
+
+```
+Selanjutnya mulai download, dan buat direktori sesuai dengan format nama yang ditentukan
+
+```bash
+if [ "$1" = "download" ]; then
+    DIRNAME="kumpulan_$(($(ls -d kumpulan_* | wc -l) + 1))"
+    mkdir "$DIRNAME"
+    # mulai download file
+    for ((i = 1; i <= DOWNLOADS; i++)); do
+        FILENAME="perjalanan_$i"
+        wget "https://id.wikipedia.org/wiki/Soekarno#/media/Berkas:Presiden_Sukarno.jpg" -O "$DIRNAME/$FILENAME"
+    done
+elif [ "$1" = "zip" ]; then
+   #!/bin/bash
+```
+Kemudian buat fungsi untuk melakukan zip setiap jam 00:00. 
+```bash
+
+DEVIL_ZIP_COUNT=$(ls -l | grep -c "devil_[0-9]*\.zip")
+
+NEXT_DEVIL_ZIP_NAME="devil_$((DEVIL_ZIP_COUNT + 1)).zip"
+
+```
+Cari semua direktori yang berawalan dengan kata kumpulan lalu dibuat zip.
+
+```bash
+zip -r $NEXT_DEVIL_ZIP_NAME $DIRECTORIES
+else
+    echo "Usage: $0 [download|zip]"
+    exit 1
+fi
+```
+Untuk memastikan bahwa gambar didownload setiap 10 jam sekali dan dilakukan zip setiap 24 jam, maka dibuat cron job sebagai berikut
+
+```
+0 13,23 * * * /home/reyhan/Documents/shift1/kobeni_liburan.sh download
+0 0 * * * /home/reyhan/Documents/shift1/kobeni_liburan.sh zip
+```
+
+
+# Source code
+```bash
+#!/bin/bash
+
+# Cek jam saat ini
+HOUR=$(date +%H)
+
+# Set interval download menjadi 10 jam
+INTERVAL=10
+
+# Cek apabila saat ini jam 12 malam
+if [ "$HOUR" -eq 0 ]; then
+    # Kalau sedang jam 12 malam, set download menjadi 1
+    DOWNLOADS=1
+else
+    # Set download sebanyak jam saat ini
+    DOWNLOADS="$HOUR"
+fi
+
+# Buat direktori baru untuk file yang baru didownload
+
+if [ "$1" = "download" ]; then
+    DIRNAME="kumpulan_$(($(ls -d kumpulan_* | wc -l) + 1))"
+    mkdir "$DIRNAME"
+    # Download file
+    for ((i = 1; i <= DOWNLOADS; i++)); do
+        FILENAME="perjalanan_$i"
+        wget "https://id.wikipedia.org/wiki/Soekarno#/media/Berkas:Presiden_Sukarno.jpg" -O "$DIRNAME/$FILENAME"
+    done
+elif [ "$1" = "zip" ]; then
+    #!/bin/bash
+
+# Cek tanggal dan waktu saat ini
+DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
+
+DEVIL_ZIP_COUNT=$(ls -l | grep -c "devil_[0-9]*\.zip")
+
+NEXT_DEVIL_ZIP_NAME="devil_$((DEVIL_ZIP_COUNT + 1)).zip"
+
+
+# Cari semua direktori yang berawalan dengan "kumpulan_"
+DIRECTORIES=$(find . -type d -name "kumpulan_*")
+
+# Zip direktori yang berawalan dengan kumpulan
+zip -r $NEXT_DEVIL_ZIP_NAME $DIRECTORIES
+else
+    echo "Usage: $0 [download|zip]"
+    exit 1
+fi
+```
+
+## Output
+Download menggunakan script 
+
+![kobeni_download](https://user-images.githubusercontent.com/107137535/222383394-82ba4e6c-c8c2-45ac-a172-70c53aca6247.png)
+
+Zip menggunakan script
+
+![kobeni_zip](https://user-images.githubusercontent.com/107137535/222383475-b5bbe6c5-bf81-4da3-9df6-41564756a17b.png)
+
+Cron job yang diset agar script berjalan sesuai dengan waktu yang ditentukan
+
+![Screenshot 2023-03-02 133212](https://user-images.githubusercontent.com/107137535/222383603-29ab6b77-7522-4b18-9539-d88bdaea6ed9.png)
+
+
+## Kendala
+Terdapat kendala pada script untuk melakukan zip file, beberapa kali script membuat file zip yang tidak ada isinya.
+
+## Soal 3
+## Analisa soal:
+Membuat sistem login dan register yang mana password dari user memiliki beberapa ketentuan yang harus di ikuti, dan Setiap kejadian login dan register di simpan ke log dengan format tertentu
+## Cara pengerjaan soal 3:
+Membuat fungsi untuk membuat folder dan file user.txt
+```sh
+#!/bin/bash
+mkdir users
+touch users/users.txt 
+```
+
+Selanjutnya membuat fungsi untuk memvalidasi password pada saat register
+```sh
+is_valid_password() {
+    local PASSWORD=$1
+    local USERNAME=$2
+
+    # Validasi minimal 8 karakter dan alphanumeric
+    if ! [[ $PASSWORD =~ ^[[:alnum:]]{8,}$ ]]; then
+        echo "Password harus terdiri dari minimal 8 karakter dan alphanumeric"
+        return 1
+    fi
+
+    # Validasi minimal 1 huruf kapital dan 1 huruf kecil
+    if ! [[ $PASSWORD =~ [A-Z] ]] || ! [[ $PASSWORD =~ [a-z] ]]; then
+        echo "Password harus memiliki minimal 1 huruf kapital dan 1 huruf kecil"
+        return 1
+    fi
+
+    # Validasi tidak sama dengan username
+    if [[ $PASSWORD == $USERNAME ]]; then
+        echo "Password tidak boleh sama dengan username"
+        return 1
+    fi
+
+    # Validasi tidak boleh menggunakan kata chicken atau ernie
+    if [[ $PASSWORD =~ chicken|ernie ]]; then
+        echo "Password tidak boleh menggunakan kata chicken atau ernie"
+        return 1
+    fi
+
+    # Jika password lolos semua validasi, return 0
+    return 0
+}
+```
+Setelah membuat fungsi untuk validasi, Kita membuat fungsi untuk mencatat log ke pada file log
+```sh
+log() {
+    local MESSAGE=$1
+    echo "$(date +"%y/%m/%d %H:%M:%S") $MESSAGE" >> log.txt
+}
+```
+Selanjutnya kita perlu membuat fungsi register 
+```sh
+register() {
+    local USERNAME=$1
+    local PASSWORD=""
+
+    # Loop untuk input password yang valid
+    while true; do
+        read -s -p "Masukkan password untuk $USERNAME: " PASSWORD
+        echo
+        if is_valid_password $PASSWORD $USERNAME; then
+            break
+        fi
+    done
+
+
+    # Cek apakah username sudah terdaftar
+    if grep -q "^$USERNAME:" users/users.txt; then
+        log "REGISTER: ERROR User $USERNAME already exists"
+        echo "Username sudah terdaftar"
+    else
+        # Simpan data user ke file
+        echo "$USERNAME:$PASSWORD" >> users/users.txt
+        log "REGISTER: INFO User $USERNAME registered successfully"
+        echo "Registrasi berhasil dilakukan untuk $USERNAME"
+    fi
+}
+```
+Setelah itu kita membuat fungsi login dan menu utama
+```sh
+login() {
+    local USERNAME=$1
+    local PASSWORD=""
+
+    # Loop untuk input password yang valid
+    while true; do
+        read -s -p "Masukkan password untuk $USERNAME: " PASSWORD
+        echo
+        if is_valid_password $PASSWORD $USERNAME; then
+            break
+        fi
+    done 
+
+    # Cek apakah username dan password sudah terdaftar di file
+    if grep -q "^$USERNAME:$PASSWORD$" users/users.txt; then
+        log "LOGIN: INFO User $USERNAME logged in"
+        echo "Login berhasil dilakukan untuk $USERNAME"
+    else
+        log "LOGIN: ERROR Failed login attempt on user $USERNAME"
+        echo "Username atau password salah"
+    fi
+}
+
+# Menu utama
+while true; do
+    echo "Silakan pilih opsi:"
+    echo "1. Registrasi"
+    echo "2. Login"
+    read -p "Pilihan anda: " CHOICE
+
+    case $CHOICE in
+        1)
+            read -p "Masukkan username baru: " USERNAME
+            register $USERNAME
+            ;;
+       2)
+        read -p "Masukkan username: " USERNAME
+        login $USERNAME
+        ;;
+    *)
+        echo "Pilihan tidak valid"
+        ;;
+esac
+
+done
+```
+## Source code
+```sh
+#!/bin/bash
+
+# Membuat direktori users dan file users.txt
+mkdir users
+touch users/users.txt
+
+# Fungsi untuk memvalidasi password
+is_valid_password() {
+    local PASSWORD=$1
+    local USERNAME=$2
+
+    # Validasi minimal 8 karakter dan alphanumeric
+    if ! [[ $PASSWORD =~ ^[[:alnum:]]{8,}$ ]]; then
+        echo "Password harus terdiri dari minimal 8 karakter dan alphanumeric"
+        return 1
+    fi
+
+    # Validasi minimal 1 huruf kapital dan 1 huruf kecil
+    if ! [[ $PASSWORD =~ [A-Z] ]] || ! [[ $PASSWORD =~ [a-z] ]]; then
+        echo "Password harus memiliki minimal 1 huruf kapital dan 1 huruf kecil"
+        return 1
+    fi
+
+    # Validasi tidak sama dengan username
+    if [[ $PASSWORD == $USERNAME ]]; then
+        echo "Password tidak boleh sama dengan username"
+        return 1
+    fi
+
+    # Validasi tidak boleh menggunakan kata chicken atau ernie
+    if [[ $PASSWORD =~ chicken|ernie ]]; then
+        echo "Password tidak boleh menggunakan kata chicken atau ernie"
+        return 1
+    fi
+
+    # Jika password lolos semua validasi, return 0
+    return 0
+}
+
+# Fungsi untuk mencatat log
+log() {
+    local MESSAGE=$1
+    echo "$(date +"%y/%m/%d %H:%M:%S") $MESSAGE" >> log.txt
+}
+
+# Fungsi untuk registrasi user
+register() {
+    local USERNAME=$1
+    local PASSWORD=""
+
+    # Loop untuk input password yang valid
+    while true; do
+        read -s -p "Masukkan password untuk $USERNAME: " PASSWORD
+        echo
+        if is_valid_password $PASSWORD $USERNAME; then
+            break
+        fi
+    done
+
+
+    # Cek apakah username sudah terdaftar
+    if grep -q "^$USERNAME:" users/users.txt; then
+        log "REGISTER: ERROR User $USERNAME already exists"
+        echo "Username sudah terdaftar"
+    else
+        # Simpan data user ke file
+        echo "$USERNAME:$PASSWORD" >> users/users.txt
+        log "REGISTER: INFO User $USERNAME registered successfully"
+        echo "Registrasi berhasil dilakukan untuk $USERNAME"
+    fi
+}
+
+# Fungsi untuk login user
+login() {
+    local USERNAME=$1
+    local PASSWORD=""
+
+    # Loop untuk input password yang valid
+    while true; do
+        read -s -p "Masukkan password untuk $USERNAME: " PASSWORD
+        echo
+        if is_valid_password $PASSWORD $USERNAME; then
+            break
+        fi
+    done 
+
+    # Cek apakah username dan password sudah terdaftar di file
+    if grep -q "^$USERNAME:$PASSWORD$" users/users.txt; then
+        log "LOGIN: INFO User $USERNAME logged in"
+        echo "Login berhasil dilakukan untuk $USERNAME"
+    else
+        log "LOGIN: ERROR Failed login attempt on user $USERNAME"
+        echo "Username atau password salah"
+    fi
+}
+
+# Menu utama
+while true; do
+    echo "Silakan pilih opsi:"
+    echo "1. Registrasi"
+    echo "2. Login"
+    read -p "Pilihan anda: " CHOICE
+
+    case $CHOICE in
+        1)
+            read -p "Masukkan username baru: " USERNAME
+            register $USERNAME
+            ;;
+       2)
+        read -p "Masukkan username: " USERNAME
+        login $USERNAME
+        ;;
+    *)
+        echo "Pilihan tidak valid"
+        ;;
+esac
+
+done
+```
+## Test output
+saat di run
+
+[![image](https://www.linkpicture.com/q/abdyusvdiua.png)](https://www.linkpicture.com/view.php?img=LPic63fd9267c7ed1870417813)
+
+Error saat salah satu kondisi password tidak terpenuhi
+
+[![image](https://www.linkpicture.com/q/Capture_885.png)](https://www.linkpicture.com/view.php?img=LPic63fd92be63d86825860864)
+
+Setelah register, user akan ditambahkan ke users/users.txt
+
+[![image](https://www.linkpicture.com/q/Capture_886.png)](https://www.linkpicture.com/view.php?img=LPic63fd9352e2a1f1325625848)
+
+Begitupula dengan log, log register akan tercatat pada file log
+
+[![image](https://www.linkpicture.com/q/Capture_887.png)](https://www.linkpicture.com/view.php?img=LPic63fd93e51ca54517175628)
+
+Berikut menjalankan fungsi login
+
+[![image](https://www.linkpicture.com/q/Capture_888.png)](https://www.linkpicture.com/view.php?img=LPic63fd96308a39c102323120)
+## Kendala
+Kendala yang dialamu mungkin penggunaan syntax yang belum familiar terhadap penggunaan bash sehingga kami harus menyesuaikan syntax dan harus memperlajari syntax baru, Penulisan syntax yang cukup rumit juga menjadi kendala kami
+
+
+
 ## Soal 4
 
 ## Analisis soal

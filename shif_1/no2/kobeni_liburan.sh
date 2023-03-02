@@ -23,10 +23,6 @@ if [ "$1" = "download" ]; then
         wget "https://id.wikipedia.org/wiki/Soekarno#/media/Berkas:Presiden_Sukarno.jpg" -O "$DIRNAME/$FILENAME"
     done
 elif [ "$1" = "zip" ]; then
-    #!/bin/bash
-
-# Get the current date and time
-DATETIME=$(date +"%Y-%m-%d_%H-%M-%S")
 
 DEVIL_ZIP_COUNT=$(ls -l | grep -c "devil_[0-9]*\.zip")
 
