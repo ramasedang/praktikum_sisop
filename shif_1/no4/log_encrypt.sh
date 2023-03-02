@@ -20,4 +20,4 @@ for ((i=0; i<${#syslog}; i++)); do
 done
 
 filename=$(date +'%H:%M %d:%m:%Y').txt
-echo -e "$encrypted" > "$filename"
+echo -e "$encrypted" > "/home/kali/Desktop/$filename"
