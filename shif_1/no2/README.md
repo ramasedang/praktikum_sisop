@@ -61,7 +61,7 @@ Untuk memastikan bahwa gambar didownload setiap 10 jam sekali dan dilakukan zip 
 
 ```
 0 13,23 * * * /home/reyhan/Documents/shift1/kobeni_liburan.sh download
-0 0 * * * /home/reyhan/Documents/shift1/kobeni_liburan.sh
+0 0 * * * /home/reyhan/Documents/shift1/kobeni_liburan.sh zip
 ```
 
 
@@ -131,5 +131,5 @@ Cron job yang diset agar script berjalan sesuai dengan waktu yang ditentukan
 
 
 ## Kendala
-Tidak ada kendala yang ditemukan pada soal ini.
+Terdapat kendala pada script untuk melakukan zip file, beberapa kali script membuat file zip yang tidak ada isinya.
 
