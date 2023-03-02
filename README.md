@@ -490,9 +490,10 @@ nano log_encrypt.sh
 ```bash
 #!/bin/bash
 jam=$(date +'%H')
+jam=${jam#0}
 syslog=$(cat /var/log/syslog)
 ```
-```jam=$(date +'%H')``` fungsi tersebut untuk mengambil jam saat backup dilakukan menggunakan perintah date dan menyimpannya ke dalam variabel jam.  Fungsi ```syslog=$(cat /var/log/syslog)``` untuk membaca isi file /var/log/syslog menggunakan perintah cat dan menyimpannya ke dalam variabel syslog.
+```jam=$(date +'%H')``` fungsi tersebut untuk mengambil jam saat backup dilakukan menggunakan perintah date dan menyimpannya ke dalam variabel jam. ```jam=${jam#0}``` digunakan untuk membuang angka nol di depan bilangan jam jika ada, sehingga nilai jam menjadi dua digit. Fungsi ```syslog=$(cat /var/log/syslog)``` untuk membaca isi file /var/log/syslog menggunakan perintah cat dan menyimpannya ke dalam variabel syslog.
 
 ```bash 
 encrypted=""
@@ -574,6 +575,7 @@ crontab -e
 ```bash
 #!/bin/bash
 jam=$(date +'%H')
+jam=${jam#0}
 syslog=$(cat /var/log/syslog)
 
 encrypted=""
