@@ -517,7 +517,7 @@ Fungsi ```encrypted=""``` untuk melakukan inisialisasi variabel encrypted sebaga
 filename=$(date +'%H:%M %d:%m:%Y').txt
 echo -e "$encrypted" > "$filename"
 ```
-```filename=$(date +'%H:%M %d:%m:%Y').txt``` perintah ini untuk  menginisialisasi variabel filename dengan format timestamp tersebut adalah "Jam:Menit Tanggal:Bulan:Tahun" dan ditambahkan ekstensi ".txt".``` echo -e "$encrypted" > "$filename"``` untuk menulis isi dari variabel ```$encrypted``` ke file dengan nama yang ditentukan dalam variabel ```$filename```.
+```filename=$(date +'%H:%M %d:%m:%Y').txt``` perintah ini untuk  menginisialisasi variabel filename dengan format timestamp tersebut adalah "Jam:Menit Tanggal:Bulan:Tahun" dan ditambahkan ekstensi ".txt".```echo -e "$encrypted" > "/home/kali/Desktop/$filename"``` untuk menulis isi dari variabel ```$encrypted``` ke file dengan nama yang ditentukan dalam variabel ```$filename``` pada folder Desktop.
 
 ##### Selanjutnya untuk file dekripsinya kita perlu melakukan file shell lagi
 ```bash
@@ -595,7 +595,7 @@ for ((i=0; i<${#syslog}; i++)); do
 done
 
 filename=$(date +'%H:%M %d:%m:%Y').txt
-echo -e "$encrypted" > "$filename"
+echo -e "$encrypted" > "/home/kali/Desktop/$filename"
 ```
 #### log_decrypt.sh
 ```bash
