@@ -5,7 +5,7 @@ HOUR=$(date +%H)
 INTERVAL=10
 
 if [ "$HOUR" -eq 0 ]; then
-    # If it is, set the number of downloads to 1
+    # Kalau sedang jam 00:00, set download menjadi 1.
     DOWNLOADS=1
 else
     
