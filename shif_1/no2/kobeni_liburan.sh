@@ -36,3 +36,6 @@ else
     echo "Usage: $0 [download|zip]"
     exit 1
 fi
+
+# 0 13,23 * * * home/reyhan/Documents/shift1/kobeni_liburan.sh download
+# 0 0 * * * home/reyhan/Documents/shift1/kobeni_liburan.sh zip
