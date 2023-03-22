@@ -1,88 +1,125 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <time.h>
-#include <fcntl.h>
-#include <errno.h>
-#include <syslog.h>
-#include <sys/types.h>
+#include <unistd.h>
+#include <signal.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 
-#define MAX_LEN 128
+#define MAX_COMMAND_LENGTH 100
 
-void print_error(char *msg) {
-    printf("Error: %s\n", msg);
-    exit(EXIT_FAILURE);
+void print_error_message() {
+    printf("Error: Invalid arguments\n");
 }
 
-int main(int argc, char *argv[]) {
-    pid_t pid, sid;
-    int fd, sec, min, hour;
-    char *file_path;
+void signal_handler(int signum) {
+    // do nothing
+}
 
-    if (argc != 5) {
-        print_error("Invalid arguments!");
-    }
-
-    if ((strcmp(argv[1], "*") != 0) && (atoi(argv[1]) < 0 || atoi(argv[1]) > 23)) {
-        print_error("Invalid hour argument!");
-    }
-
-    if (atoi(argv[2]) < 0 || atoi(argv[2]) > 59) {
-        print_error("Invalid minute argument!");
-    }
-
-    if (atoi(argv[3]) < 0 || atoi(argv[3]) > 59) {
-        print_error("Invalid second argument!");
-    }
-
-    file_path = argv[4];
-
-    pid = fork();
+void daemonize() {
+    pid_t pid = fork();
     if (pid < 0) {
-        print_error("Failed to fork!");
+        exit(EXIT_FAILURE);
     }
-
     if (pid > 0) {
         exit(EXIT_SUCCESS);
     }
-
+    if (setsid() < 0) {
+        exit(EXIT_FAILURE);
+    }
     umask(0);
-
-    sid = setsid();
-    if (sid < 0) {
-        print_error("Failed to create a new session!");
-    }
-
-    if ((chdir("/")) < 0) {
-        print_error("Failed to change working directory!");
-    }
-
+    chdir("/");
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
+}
 
-    fd = open("/dev/null", O_WRONLY);
+int main(int argc, char *argv[]) {
+    if (argc != 5) {
+        print_error_message();
+        //prin all arguments
+        for (int i = 0; i < argc; i++) {
+            printf("argv[%d] = %s ", i, argv[i]);
+        }
+        return 1;
+    }
+
+    char* hour_str = argv[1];
+    char* minute_str = argv[2];
+    char* second_str = argv[3];
+    char* command_path = argv[4];
+
+    int hour, minute, second;
+    if (strcmp(hour_str, "*") == 0) {
+        hour = -1;
+    } else {
+        hour = atoi(hour_str);
+        if (hour < 0 || hour > 23) {
+            print_error_message();
+            return 1;
+        }
+    }
+
+    if (strcmp(minute_str, "*") == 0) {
+        minute = -1;
+    } else {
+        minute = atoi(minute_str);
+        if (minute < 0 || minute > 59) {
+            print_error_message();
+            return 1;
+        }
+    }
+
+    if (strcmp(second_str, "*") == 0) {
+        second = -1;
+    } else {
+        second = atoi(second_str);
+        if (second < 0 || second > 59) {
+            print_error_message();
+            return 1;
+        }
+    }
+
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, signal_handler);
+
+    pid_t pid = fork();
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0) {
+        // exit parent process
+        exit(EXIT_SUCCESS);
+    }
+
+    // child process 1
+    setsid();
+
+    pid = fork();
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0) {
+        // exit child process 1
+        exit(EXIT_SUCCESS);
+    }
+
+    // child process 2 (daemon)
+    daemonize();
 
     while (1) {
         time_t now = time(NULL);
-        struct tm *tm_info = localtime(&now);
-
-        sec = tm_info->tm_sec;
-        min = tm_info->tm_min;
-        hour = tm_info->tm_hour;
-
-        if ((strcmp(argv[1], "*") == 0 || atoi(argv[1]) == hour) && atoi(argv[2]) == min && atoi(argv[3]) == sec) {
-            if (fork() == 0) {
-                execl("/bin/bash", "bash", file_path, NULL);
-                exit(0);
-            }
+        struct tm* current_time = localtime(&now);
+        if ((hour == -1 || hour == current_time->tm_hour) &&
+            (minute == -1 || minute == current_time->tm_min) &&
+            (second == -1 || second == current_time->tm_sec)) {
+            char command[MAX_COMMAND_LENGTH];
+            sprintf(command, "/bin/bash %s", command_path);
+            system(command);
         }
-
         sleep(1);
     }
 
-    close(fd);
     return 0;
 }
