@@ -5,12 +5,70 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <time.h>
-#define MAX_FILES 100	// maksimum jumlah file
-#define MAX_FILENAME_LENGTH 255	// maksimum panjang nama file
+#define MAX_FILES 100			// maksimum jumlah file
+#define MAX_FILENAME_LENGTH 255 // maksimum panjang nama file
 #define MAX_PATH 1024
 
 // referensi https://stackoverflow.com/questions/48182274/how-to-unzip-a-zipped-file-zip-using-c-in-visual-studio
 
+int unzip(const char *zipPath, const char *desPath);
+
+int zip_dir(const char *dirPath, const char *zipPath);
+
+char *select_random_image(void);
+
+void klasifikasi_hewan(void);
+
+int main(void)
+{
+	// URL file yang akan diunduh
+	char url[] = "https://drive.google.com/uc?export=download&id=1oDgj5kSiDO0tlyS7-20uz7t20X3atwrq";
+
+	// Nama file yang akan disimpan
+	char outfilename[] = "animal.zip";
+
+	// Buat perintah sistem untuk mengunduh file
+	char command[1000];
+	sprintf(command, "curl -L -o %s \"%s\"", outfilename, url);
+
+	// Jalankan perintah sistem untuk mengunduh file
+	system(command);
+
+	// Ekstrak isi file zip
+	if (unzip(outfilename, ".") == 0)
+	{
+		printf("Gagal mengekstrak file zip\n");
+		return 1;
+	}
+
+	// Pilih gambar secara acak
+	char *filename = select_random_image();
+	if (filename != NULL)
+	{
+		printf("Gambar yang dipilih: %s\n", filename);
+	}
+
+	klasifikasi_hewan();
+
+	// membuat file zip dari direktori HewanDarat
+	zip_dir("HewanDarat", "HewanDarat.zip");
+
+	// membuat file zip dari direktori HewanAmphibi
+
+	zip_dir("HewanAmphibi", "HewanAmphibi.zip");
+
+	// membuat file zip dari direktori HewanAir
+
+	zip_dir("HewanAir", "HewanAir.zip");
+
+	// menghapus direktori HewanDarat, HewanAmphibi, HewanAir
+
+	system("rm -r -f HewanDarat");
+	system("rm -r -f HewanAmphibi");
+	system("rm -r -f HewanAir");
+
+	return 0;
+}
 
 int unzip(const char *zipPath, const char *desPath)
 {
@@ -32,7 +90,7 @@ int unzip(const char *zipPath, const char *desPath)
 				return 0;
 			}
 
-			char *buffer = (char*) malloc(st.size);
+			char *buffer = (char *)malloc(st.size);
 			if (!buffer)
 			{
 				zip_fclose(zf);
@@ -86,7 +144,7 @@ int zip_dir(const char *dirPath, const char *zipPath)
 	}
 
 	// Looping untuk membaca isi direktori dan men-zip setiap file
-	struct dirent * entry;
+	struct dirent *entry;
 	while ((entry = readdir(dir)) != NULL)
 	{
 		// Skip current and parent directory
@@ -110,7 +168,7 @@ int zip_dir(const char *dirPath, const char *zipPath)
 		fseek(f, 0, SEEK_END);
 		int size = ftell(f);
 		rewind(f);
-		char *buffer = (char*) malloc(size);
+		char *buffer = (char *)malloc(size);
 		fread(buffer, sizeof(char), size, f);
 		fclose(f);
 
@@ -135,8 +193,8 @@ char *select_random_image(void)
 	static char filename[MAX_FILENAME_LENGTH];
 
 	// Buka direktori
-	DIR * dir;
-	struct dirent * ent;
+	DIR *dir;
+	struct dirent *ent;
 	dir = opendir(".");
 	if (dir != NULL)
 	{
@@ -185,8 +243,8 @@ void klasifikasi_hewan(void)
 	mkdir("HewanAir", 0777);
 
 	// Memindahkan file gambar hewan ke direktori yang sesuai
-	DIR * dir;
-	struct dirent * entry;
+	DIR *dir;
+	struct dirent *entry;
 	char path[MAX_PATH];
 	dir = opendir(".");
 	if (dir == NULL)
@@ -218,49 +276,4 @@ void klasifikasi_hewan(void)
 	}
 
 	closedir(dir);
-}
-
-int main(void)
-{
-	// URL file yang akan diunduh
-	char url[] = "https://drive.google.com/uc?export=download&id=1oDgj5kSiDO0tlyS7-20uz7t20X3atwrq";
-
-	// Nama file yang akan disimpan
-	char outfilename[] = "animal.zip";
-
-	// Buat perintah sistem untuk mengunduh file
-	char command[1000];
-	sprintf(command, "curl -L -o %s \"%s\"", outfilename, url);
-
-	// Jalankan perintah sistem untuk mengunduh file
-	system(command);
-
-	// Ekstrak isi file zip
-	if (unzip(outfilename, ".") == 0)
-	{
-		printf("Gagal mengekstrak file zip\n");
-		return 1;
-	}
-
-	// Pilih gambar secara acak
-	char *filename = select_random_image();
-	if (filename != NULL)
-	{
-		printf("Gambar yang dipilih: %s\n", filename);
-	}
-
-	klasifikasi_hewan();
-
-	// membuat file zip dari direktori HewanDarat
-	zip_dir("HewanDarat", "HewanDarat.zip");
-
-	// membuat file zip dari direktori HewanAmphibi
-
-	zip_dir("HewanAmphibi", "HewanAmphibi.zip");
-
-	// membuat file zip dari direktori HewanAir
-
-	zip_dir("HewanAir", "HewanAir.zip");
-
-	return 0;
 }
