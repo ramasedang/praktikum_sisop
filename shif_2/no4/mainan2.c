@@ -8,19 +8,79 @@
 #include <sys/types.h>
 #include <sys/time.h>
 
-#define MAX_COMMAND_LENGTH 100
+#define MAX_PANJANG_PERINTAH 100
 
-void print_error_message()
+void cetak_pesan_error();
+void tangani_sinyal(int signum);
+void buat_proses_latar();
+int parse_waktu_string(char *waktu_str, int min_value, int max_value);
+int perlu_dieksekusi(char *jam_str, char *menit_str, char *detik_str);
+void jalankan_perintah(char *path_perintah);
+
+int main(int argc, char *argv[])
 {
-    printf("Error: Invalid arguments\n");
+    if (argc != 5)
+    {
+        cetak_pesan_error();
+        return 1;
+    }
+
+    int jam = parse_waktu_string(argv[1], 0, 23);
+    int menit = parse_waktu_string(argv[2], 0, 59);
+    int detik = parse_waktu_string(argv[3], 0, 59);
+    char *path_perintah = argv[4];
+
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, tangani_sinyal);
+
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0)
+    {
+        exit(EXIT_SUCCESS);
+    }
+
+    setsid();
+
+    pid = fork();
+    if (pid < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0)
+    {
+        exit(EXIT_SUCCESS);
+    }
+
+    buat_proses_latar();
+
+    while (1)
+    {
+        if (perlu_dieksekusi(argv[1], argv[2], argv[3]))
+        {
+            jalankan_perintah(path_perintah);
+        }
+
+        sleep(1);
+    }
+
+    return 0;
 }
 
-void signal_handler(int signum)
+void cetak_pesan_error()
 {
-    // do nothing
+    printf("Error: Argumen tidak valid\n");
 }
 
-void daemonize()
+void tangani_sinyal(int signum)
+{
+    // tidak melakukan apa-apa
+}
+
+void buat_proses_latar()
 {
     pid_t pid = fork();
     if (pid < 0)
@@ -42,141 +102,83 @@ void daemonize()
     close(STDERR_FILENO);
 }
 
-int parse_time_string(char *time_str, int min_value, int max_value)
+int parse_waktu_string(char *waktu_str, int min_value, int max_value)
 {
-    if (strcmp(time_str, "*") == 0)
+    if (strcmp(waktu_str, "*") == 0)
     {
         return -1;
     }
-    else if (strchr(time_str, '/') != NULL)
+    else if (strchr(waktu_str, '/') != NULL)
     {
-        char *slash_pos = strchr(time_str, '/');
-        int divisor = atoi(slash_pos + 1);
-        if (divisor == 0)
+        char *slash_pos = strchr(waktu_str, '/');
+        int pembagi = atoi(slash_pos + 1);
+        if (pembagi == 0)
         {
-            print_error_message();
+            cetak_pesan_error();
             exit(1);
         }
-        int value = atoi(time_str);
-        if (value < min_value || value > max_value)
+        int nilai = atoi(waktu_str);
+        if (nilai < min_value || nilai > max_value)
         {
-            print_error_message();
+            cetak_pesan_error();
             exit(1);
         }
-        return value;
+        return nilai;
     }
     else
     {
-        int value = atoi(time_str);
-        if (value < min_value || value > max_value)
+        int nilai = atoi(waktu_str);
+        if (nilai < min_value || nilai > max_value)
         {
-            print_error_message();
+            cetak_pesan_error();
             exit(1);
         }
-        return value;
+        return nilai;
     }
 }
 
-int should_execute(char *hour_str, char *minute_str, char *second_str)
+int perlu_dieksekusi(char *jam_str, char *menit_str, char *detik_str)
 {
     time_t now = time(NULL);
-    struct tm *current_time = localtime(&now);
-    int hour = parse_time_string(hour_str, 0, 23);
-    int minute = parse_time_string(minute_str, 0, 59);
-    int second = parse_time_string(second_str, 0, 59);
-    // rest of the function remains the same
+    struct tm *waktu_sekarang = localtime(&now);
+    int jam = parse_waktu_string(jam_str, 0, 23);
+    int menit = parse_waktu_string(menit_str, 0, 59);
+    int detik = parse_waktu_string(detik_str, 0, 59);
     int interval = 1;
-    if (hour != -1)
+    if (jam != -1)
     {
-        interval *= (hour == current_time->tm_hour) ? 1 : 0;
+        interval *= (jam == waktu_sekarang->tm_hour) ? 1 : 0;
     }
-    if (minute != -1)
+    if (menit != -1)
     {
-        int minute_value = parse_time_string(minute, 0, 59);
-        if (minute_value == -1)
+        int nilai_menit = parse_waktu_string(menit_str, 0, 59);
+        if (nilai_menit == -1)
         {
             interval *= 1;
         }
         else
         {
-            interval *= ((current_time->tm_min - minute_value) % minute_value == 0) ? 1 : 0;
+            interval *= ((waktu_sekarang->tm_min - nilai_menit) % nilai_menit == 0) ? 1 : 0;
         }
     }
-    if (second != -1)
+    if (detik != -1)
     {
-        int second_value = parse_time_string(second, 0, 59);
-        if (second_value == -1)
+        int nilai_detik = parse_waktu_string(detik_str, 0, 59);
+        if (nilai_detik == -1)
         {
             interval *= 1;
         }
         else
         {
-            interval *= ((current_time->tm_sec - second_value) % second_value == 0) ? 1 : 0;
+            interval *= ((waktu_sekarang->tm_sec - nilai_detik) % nilai_detik == 0) ? 1 : 0;
         }
     }
     return interval;
 }
 
-void execute_command(char *command_path)
+void jalankan_perintah(char *path_perintah)
 {
-    char command[MAX_COMMAND_LENGTH];
-    sprintf(command, "/bin/bash %s", command_path);
-    system(command);
-}
-
-int main(int argc, char *argv[])
-{
-    if (argc != 5)
-    {
-        print_error_message();
-        return 1;
-    }
-
-    int hour = parse_time_string(argv[1], 0, 23);
-    int minute = parse_time_string(argv[2], 0, 59);
-    int second = parse_time_string(argv[3], 0, 59);
-    char *command_path = argv[4];
-
-    signal(SIGCHLD, SIG_IGN);
-    signal(SIGHUP, signal_handler);
-
-    pid_t pid = fork();
-    if (pid < 0)
-    {
-        exit(EXIT_FAILURE);
-    }
-    if (pid > 0)
-    {
-        // exit parent process
-        exit(EXIT_SUCCESS);
-    }
-
-    // child process 1
-    setsid();
-
-    pid = fork();
-    if (pid < 0)
-    {
-        exit(EXIT_FAILURE);
-    }
-    if (pid > 0)
-    {
-        // exit child process 1
-        exit(EXIT_SUCCESS);
-    }
-
-    // child process 2 (daemon)
-    daemonize();
-
-    while (1)
-    {
-        if (should_execute(argv[1], argv[2], argv[3]))
-        {
-            execute_command(command_path);
-        }
-
-        sleep(1);
-    }
-
-    return 0;
+    char perintah[MAX_PANJANG_PERINTAH];
+    sprintf(perintah, "/bin/bash %s", path_perintah);
+    system(perintah);
 }
