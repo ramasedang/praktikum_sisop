@@ -14,71 +14,16 @@
 bool is_running = true;
 int mode;
 
-
 //Handler untuk sinyal SIGTERM
-void sigterm_handler(int sig) {
-    is_running = false;
-}
-
+void sigterm_handler(int sig);
 //fungsi menghapus folder
-void delete_folder(const char* nama_folder) {
-    sleep(5);
-    pid_t pid = fork();
-    if (pid == 0) {
-        execl("/bin/rm", "rm", "-rf", nama_folder, NULL);
-        exit(EXIT_SUCCESS);
-    }
-}
-
+void delete_folder(const char* nama_folder);
 //fungsi melakukan zip pada folder
-void zip_folder(const char* nama_folder) {
-    char nama_zip[100];
-    sprintf(nama_zip, "%s.zip", nama_folder);
-
-    pid_t pid = fork();
-    if (pid == 0) {
-        execl("/usr/bin/zip", "zip", "-rmq", nama_zip, nama_folder, NULL);
-        exit(EXIT_SUCCESS);
-    }
-}
-
+void zip_folder(const char* nama_folder);
 //fungsi mendownload gambar sesuai perintah pada soal
-void download_gambar(const char* nama_folder, int thread_num) {
-    time_t t = time(NULL);
-    char nama_gambar[50];
-    sprintf(nama_gambar, "%04d-%02d-%02d_%02d:%02d:%02d_%d.jpg",
-        1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
-        localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec, thread_num);
-    char url[50];
-    sprintf(url, "https://picsum.photos/%d", (int) (t%1000)+50);
-    char path[100];
-    sprintf(path, "%s/%s", nama_folder, nama_gambar);
-
-    pid_t pid = fork();
-    if (pid == 0) {
-        execl("/usr/bin/wget", "wget", "-q", "-O", path, url, NULL);
-        exit(EXIT_SUCCESS);
-    }
-}
-
+void download_gambar(const char* nama_folder, int thread_num);
 //fungsi membuat file killer sesuai dengan Modenya
-void create_killer(char* nama_program) {
-    FILE* fp;
-    fp = fopen("killer", "w");
-    fprintf(fp, "#!/bin/bash\n");
-
-    //mengecek mode yang digunakan
-    if (mode == MODE_A) {
-        fprintf(fp, "killall -SIGKILL %s\n", nama_program);
-    } else {
-        fprintf(fp, "kill -SIGTERM %d\n", getpid());
-    }
-
-    //menghapus file killer setelah digunakan
-    fprintf(fp, "rm killer\n");
-    fclose(fp);
-    chmod("killer", 0700);
-}
+void create_killer(char* nama_program);
 
 int main(int argc, char** argv) {
     if (argc < 2) {
@@ -172,152 +117,70 @@ int main(int argc, char** argv) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//Handler untuk sinyal SIGTERM
+void sigterm_handler(int sig) {
+    is_running = false;
+}
+
+//fungsi menghapus folder
+void delete_folder(const char* nama_folder) {
+    sleep(5);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/bin/rm", "rm", "-rf", nama_folder, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+//fungsi melakukan zip pada folder
+void zip_folder(const char* nama_folder) {
+    char nama_zip[100];
+    sprintf(nama_zip, "%s.zip", nama_folder);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/zip", "zip", "-rmq", nama_zip, nama_folder, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+//fungsi mendownload gambar sesuai perintah pada soal
+void download_gambar(const char* nama_folder, int thread_num) {
+    time_t t = time(NULL);
+    char nama_gambar[50];
+    sprintf(nama_gambar, "%04d-%02d-%02d_%02d:%02d:%02d_%d.jpg",
+        1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
+        localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec, thread_num);
+    char url[50];
+    sprintf(url, "https://picsum.photos/%d", (int) (t%1000)+50);
+    char path[100];
+    sprintf(path, "%s/%s", nama_folder, nama_gambar);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/wget", "wget", "-q", "-O", path, url, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+//fungsi membuat file killer sesuai dengan Modenya
+void create_killer(char* nama_program) {
+    FILE* fp;
+    fp = fopen("killer", "w");
+    fprintf(fp, "#!/bin/bash\n");
+
+    //mengecek mode yang digunakan
+    if (mode == MODE_A) {
+        fprintf(fp, "killall -SIGKILL %s\n", nama_program);
+    } else {
+        fprintf(fp, "kill -SIGTERM %d\n", getpid());
+    }
+
+    //menghapus file killer setelah digunakan
+    fprintf(fp, "rm killer\n");
+    fclose(fp);
+    chmod("killer", 0700);
+}
 
 
 
