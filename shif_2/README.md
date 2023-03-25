@@ -571,3 +571,373 @@ void klasifikasi_hewan(void)
 
 ## Kendala
 Kendala saat melakukan zip dan unzip karena tidak boleh menggunakan system, dan juga bahasa C yang jarang digunakan untuk hal seperti ini, jadi harus riset lebih lanjut
+
+# Soal 2
+
+## Analisis Soal
+
+Berdasarkan soal kita diminta untuk membuat folder secara otomatis dengan nama timestamp setiap 30 detik, lalu endownload 15 gambar dari https://picsum.photos/ untuk setiap folder yang dibuat dengan 5 detik setiap foto diberi nama pada setiap gambar yang diunduh dengan format timestamp [YYYY-mm-dd_HH:mm:ss]. Tiap gambar berbentuk persegi dengan ukuran (t%1000)+50 piksel dimana t adalah detik Epoch Unix. Setelah setiap folder terisi dengan 15 gambar, folder akan di-zip dan folder aslinya akan dihapus.Lalu, membuat program "killer" yang dapat digunakan untuk menghentikan program utama dan menghapus dirinya sendiri. Memungkinkan program utama dijalankan dalam dua mode yaitu MODE_A dan MODE_B dengan argumen -a atau -b. Dalam MODE_A, program utama akan langsung berhenti ketika program killer dijalankan. Dalam MODE_B, program utama akan berhenti ketika program killer dijalankan, tetapi membiarkan proses di setiap folder dan zip yang masih berjalan sampai selesai.
+
+## Cara pengerjaan soal 2 :
+
+Pertama, perlu dilakukan fungsi - fungsi untuk pengerjaan soal.
+```c 
+//fungsi mendownload gambar sesuai perintah pada soal
+void download_gambar(const char* nama_folder, int thread_num) {
+    time_t t = time(NULL);
+    char nama_gambar[50];
+    sprintf(nama_gambar, "%04d-%02d-%02d_%02d:%02d:%02d_%d.jpg",
+        1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
+        localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec, thread_num);
+    char url[50];
+    sprintf(url, "https://picsum.photos/%d", (int) (t%1000)+50);
+    char path[100];
+    sprintf(path, "%s/%s", nama_folder, nama_gambar);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/wget", "wget", "-q", "-O", path, url, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+``` 
+Fungsi di atas merupakan fungsi mendownload gambar, kita perlu library ```time``` sehingga mengambil localtime untuk format nama. Lalu, gambar didownload dengan url dan dengan format yang ditentukan, dan dimasukkan pada folder yang dibuat.
+```c
+//fungsi melakukan zip pada folder
+void zip_folder(const char* nama_folder) {
+    char nama_zip[100];
+    sprintf(nama_zip, "%s.zip", nama_folder);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/zip", "zip", "-rmq", nama_zip, nama_folder, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+//fungsi menghapus folder
+void delete_folder(const char* nama_folder) {
+    sleep(5);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/bin/rm", "rm", "-rf", nama_folder, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+```
+Fungsi zip_folder digunakan untuk mengompresi sebuah folder menjadi file zip dengan format nama <nama_folder>.zip. Selanjutnya, fungsi ini akan melakukan fork untuk membuat proses baru. Proses baru tersebut akan menjalankan perintah ```zip -rmq <nama_zip> <nama_folder>``` dengan menggunakan fungsi ```execl```. 
+
+Fungsi delete_folder digunakan untuk menghapus sebuah folder beserta isinya. Fungsi ini menerima parameter berupa nama_folder yang merupakan nama folder yang akan dihapus. Pertama-tama, fungsi ini akan menunda proses selama 5 detik menggunakan fungsi sleep. Hal ini dilakukan untuk memastikan bahwa proses zip sebelumnya telah selesai sebelum folder dihapus.Selanjutnya, fungsi ini akan melakukan fork untuk membuat proses baru. Argumen -rf pada perintah rm berarti melakukan operasi remove secara rekursif dan menghapus folder beserta seluruh isiannya. Setelah menjalankan perintah rm, proses tersebut akan keluar dengan menggunakan perintah exit.
+
+```c
+//fungsi membuat file killer sesuai dengan Modenya
+void create_killer(char* nama_program) {
+    FILE* fp;
+    fp = fopen("killer", "w");
+    fprintf(fp, "#!/bin/bash\n");
+
+    //mengecek mode yang digunakan
+    if (mode == MODE_A) {
+        fprintf(fp, "killall -SIGKILL %s\n", nama_program);
+    } else {
+        fprintf(fp, "kill -SIGTERM %d\n", getpid());
+    }
+
+    //menghapus file killer setelah digunakan
+    fprintf(fp, "rm killer\n");
+    fclose(fp);
+    chmod("killer", 0700);
+}
+
+//Handler untuk sinyal SIGTERM
+void sigterm_handler(int sig) {
+    is_running = false;
+}
+
+```
+Fungsi create_killer digunakan untuk membuat file killer yang akan digunakan untuk menterminasi program.  Jika mode yang digunakan adalah MODE_A, maka perintah killall -SIGKILL %s\n akan men-kill semua proses dengan nama program yang sama. Jika mode yang digunakan adalah MODE_B, maka perintah kill -SIGTERM akan mengirim sinyal SIGTERM ke program sehingga program akan berhenti tetapi akan membiarkan proses yang masih berjalan sampai selesai.Setelah itu, fungsi ini menuliskan perintah ```rm killer\n```` ke dalam file killer, yang akan menghapus file killer setelah file tersebut digunakan.Terakhir, fungsi ini menutup file killer dan mengubah permission file killer menjadi 0755 sehingga file menjadi executable.
+
+Fungsi sigterm_handler adalah sebuah handler (penangan) yang akan dipanggil ketika program menerima sinyal SIGTERM. Pada contoh kode yang diberikan, ketika handler ini dipanggil, maka variabel is_running akan diubah nilainya menjadi false. Hal ini berguna untuk memberikan sinyal pada program agar berhenti secara normal.
+```c
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        printf("Usage: %s [-a | -b]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    //mengecek mode yang yang digunakan
+    if (strcmp(argv[1], "-a") == 0) {
+        mode = MODE_A;
+    } else if (strcmp(argv[1], "-b") == 0) {
+        mode = MODE_B;
+    } else {
+        printf("Invalid argument\n");
+        exit(EXIT_FAILURE);
+    }
+
+    signal(SIGTERM, sigterm_handler);
+
+    // Variabel untuk menyimpan PID dan SID
+    pid_t pid, sid;
+
+    // Menyimpan PID dari Child Process
+    pid = fork();
+
+    /* Keluar saat fork gagal
+    * (nilai variabel pid < 0) */
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    /* Keluar saat fork berhasil
+    * (nilai variabel pid adalah PID dari child process) */
+    if (pid > 0) {
+        exit(EXIT_SUCCESS);
+    }
+
+    // mengubah file mode mask
+    umask(0);
+
+    // create new session
+    sid = setsid();
+    if (sid < 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    // change working directory
+    if (chdir(".") < 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    // close standard file descriptors
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    create_killer(argv[0]);
+
+    // start the main loop
+    while (is_running) {
+        time_t t = time(NULL);
+        char nama_folder[50];
+        sprintf(nama_folder, "%04d-%02d-%02d_%02d:%02d:%02d", 
+            1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
+            localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec);
+
+        pid_t child_pid = fork();
+
+        if (child_pid == 0) {
+            // membuat folder
+            mkdir(nama_folder, 0777);
+
+            // download gambar
+            for (int i = 0; i < 15; i++) {
+                download_gambar(nama_folder, i + 1);
+                sleep(5);
+            }
+
+            // zip folder
+            zip_folder(nama_folder);
+
+            // menghapus folder
+            delete_folder(nama_folder);
+
+            exit(EXIT_SUCCESS);
+        } else {
+            sleep(30);
+        }
+    }
+    exit(EXIT_SUCCESS);
+}
+
+```
+Untuk menjalankan program ini sebagai daemon, program akan membuat child process dengan menggunakan fork(). Child process kemudian akan melakukan beberapa hal seperti membuat folder dengan format nama yang sesuai, mengunduh gambar-gambar dari internet, mengompres folder tersebut menjadi file zip, dan menghapus folder tersebut. Setelah itu, child process akan selesai dan program utama akan sleep selama 30 detik sebelum membuat child process baru dan mengulang kembali proses di atas. Sehingga, folder akan dibuat setiap 30 detik. File gambar juga akan di download setiap 5 detik.
+
+Program utama juga menggunakan signal handler untuk menangani sinyal SIGTERM yang akan dikirimkan ke program saat dihentikan. Ketika sinyal SIGTERM diterima, variabel is_running akan diubah menjadi false dan program akan berhenti secara bertahap sesuai dengan sleep time pada loop utama.
+
+## Source Code
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <unistd.h>
+#include <time.h>
+#include <dirent.h>
+#include <signal.h>
+#include <stdbool.h>
+
+#define MODE_A 1
+#define MODE_B 2
+
+bool is_running = true;
+int mode;
+
+//Handler untuk sinyal SIGTERM
+void sigterm_handler(int sig);
+//fungsi menghapus folder
+void delete_folder(const char* nama_folder);
+//fungsi melakukan zip pada folder
+void zip_folder(const char* nama_folder);
+//fungsi mendownload gambar sesuai perintah pada soal
+void download_gambar(const char* nama_folder, int thread_num);
+//fungsi membuat file killer sesuai dengan Modenya
+void create_killer(char* nama_program);
+
+int main(int argc, char** argv) {
+    if (argc < 2) {
+        printf("Usage: %s [-a | -b]\n", argv[0]);
+        exit(EXIT_FAILURE);
+    }
+
+    //mengecek mode yang yang digunakan
+    if (strcmp(argv[1], "-a") == 0) {
+        mode = MODE_A;
+    } else if (strcmp(argv[1], "-b") == 0) {
+        mode = MODE_B;
+    } else {
+        printf("Invalid argument\n");
+        exit(EXIT_FAILURE);
+    }
+
+    signal(SIGTERM, sigterm_handler);
+
+    // Variabel untuk menyimpan PID dan SID
+    pid_t pid, sid;
+
+    // Menyimpan PID dari Child Process
+    pid = fork();
+
+    /* Keluar saat fork gagal
+    * (nilai variabel pid < 0) */
+    if (pid < 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    /* Keluar saat fork berhasil
+    * (nilai variabel pid adalah PID dari child process) */
+    if (pid > 0) {
+        exit(EXIT_SUCCESS);
+    }
+
+    // mengubah file mode mask
+    umask(0);
+
+    // create new session
+    sid = setsid();
+    if (sid < 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    // change working directory
+    if (chdir(".") < 0) {
+        exit(EXIT_FAILURE);
+    }
+
+    // close standard file descriptors
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+
+    create_killer(argv[0]);
+
+    // start the main loop
+    while (is_running) {
+        time_t t = time(NULL);
+        char nama_folder[50];
+        sprintf(nama_folder, "%04d-%02d-%02d_%02d:%02d:%02d", 
+            1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
+            localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec);
+
+        pid_t child_pid = fork();
+
+        if (child_pid == 0) {
+            // membuat folder
+            mkdir(nama_folder, 0777);
+
+            // download gambar
+            for (int i = 0; i < 15; i++) {
+                download_gambar(nama_folder, i + 1);
+                sleep(5);
+            }
+
+            // zip folder
+            zip_folder(nama_folder);
+
+            // menghapus folder
+            delete_folder(nama_folder);
+
+            exit(EXIT_SUCCESS);
+        } else {
+            sleep(30);
+        }
+    }
+    exit(EXIT_SUCCESS);
+}
+
+
+//Handler untuk sinyal SIGTERM
+void sigterm_handler(int sig) {
+    is_running = false;
+}
+
+//fungsi menghapus folder
+void delete_folder(const char* nama_folder) {
+    sleep(5);
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/bin/rm", "rm", "-rf", nama_folder, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+//fungsi melakukan zip pada folder
+void zip_folder(const char* nama_folder) {
+    char nama_zip[100];
+    sprintf(nama_zip, "%s.zip", nama_folder);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/zip", "zip", "-rmq", nama_zip, nama_folder, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+//fungsi mendownload gambar sesuai perintah pada soal
+void download_gambar(const char* nama_folder, int thread_num) {
+    time_t t = time(NULL);
+    char nama_gambar[50];
+    sprintf(nama_gambar, "%04d-%02d-%02d_%02d:%02d:%02d_%d.jpg",
+        1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
+        localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec, thread_num);
+    char url[50];
+    sprintf(url, "https://picsum.photos/%d", (int) (t%1000)+50);
+    char path[100];
+    sprintf(path, "%s/%s", nama_folder, nama_gambar);
+
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/usr/bin/wget", "wget", "-q", "-O", path, url, NULL);
+        exit(EXIT_SUCCESS);
+    }
+}
+
+//fungsi membuat file killer sesuai dengan Modenya
+void create_killer(char* nama_program) {
+    FILE* fp;
+    fp = fopen("killer", "w");
+    fprintf(fp, "#!/bin/bash\n");
+
+    //mengecek mode yang digunakan
+    if (mode == MODE_A) {
+        fprintf(fp, "killall -SIGKILL %s\n", nama_program);
+    } else {
+        fprintf(fp, "kill -SIGTERM %d\n", getpid());
+    }
+
+    //menghapus file killer setelah digunakan
+    fprintf(fp, "rm killer\n");
+    fclose(fp);
+    chmod("killer", 0755);
+}
+```
