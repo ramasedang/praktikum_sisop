@@ -943,6 +943,12 @@ void create_killer(char* nama_program) {
 }
 ```
 ## Test Output
+```./lukisan -a```
+![image](https://user-images.githubusercontent.com/100351038/227714014-94824755-1d37-4374-971d-9f6dbc9048dc.png)
+``` ./lukisan -b ```
+![image](https://user-images.githubusercontent.com/100351038/227714333-8da801bf-a0d1-428e-93a4-8a6fdc6340fa.png)
+
+![image](https://user-images.githubusercontent.com/100351038/227714941-c32d91b0-10ec-4c6a-b653-49f2f3fcfb40.png)
 
 ## Kendala
 Kendala saat pengerjaan soal karena tidak boleh menggunakan system(), dan kesulitan dalam melakukan overlapping.
