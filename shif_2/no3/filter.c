@@ -1,19 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <dirent.h>
 #include <string.h>
-#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/wait.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
 #include <fnmatch.h>
 
-#define MAX_PLAYERS 100
+#define max_players 100
 #define team "ManUtd"
-#define MAX_FILENAME 256
+#define max_filename 256
 
-// Declare the struct for player
+// Buat struct untuk deklarasi player yang baru didownload
 typedef struct
 {
     char name[50];
@@ -21,46 +21,13 @@ typedef struct
     char image_file[100];
 } Player;
 
-void downloadZip();
-void extractZip();
-void filterPlayers();
-void categorizePlayers();
-void buatTim(int bek, int gelandang, int striker);
-
-void downloadZip()
-{
-    char *args[] = {"curl", "-L", "-o", "players.zip", "https://drive.google.com/u/0/uc?id=1zEAneJ1-0sOgt13R1gL4i1ONWfKAtwBF&export=download", NULL};
-    pid_t pid = fork();
-
-    if (pid == 0)
-    { // child process
-        execvp(args[0], args);
-        perror("execvp");
-        exit(EXIT_FAILURE);
-    }
-    else
-    { // parent process
-        int status;
-        waitpid(pid, &status, 0);
-        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
-        {
-            printf("Error downloading players\n");
-            exit(EXIT_FAILURE);
-        }
-    }
-}
 
 void extractZip()
 {
     char *args[] = {"unzip", "players.zip", NULL};
     pid_t pid = fork();
 
-    if (pid == -1)
-    {
-        perror("fork");
-        exit(EXIT_FAILURE);
-    }
-    else if (pid == 0)
+    if (pid == 0)
     { // child process
         execvp(args[0], args);
         perror("execvp");
@@ -78,34 +45,31 @@ void extractZip()
     }
 }
 
-void filterPlayers()
-{
-    DIR *dir = opendir("players");
-    struct dirent *entry;
-    char fileName[MAX_FILENAME];
 
-    if (dir == NULL)
-    {
-        printf("Error opening directory\n");
+
+void downloadZip()
+{
+    char *args[] = {"curl", "-L", "-o", "players.zip", "https://drive.google.com/u/0/uc?id=1zEAneJ1-0sOgt13R1gL4i1ONWfKAtwBF&export=download", NULL};
+    pid_t pid = fork();
+
+    // check apakah process merupakan child process
+    if (pid == 0)
+    { 
+        execvp(args[0], args);
+        perror("execvp");
         exit(EXIT_FAILURE);
     }
-
-    while ((entry = readdir(dir)) != NULL)
-    {
-        if (entry->d_type == DT_REG)
-        { // if entry is a regular file
-            if (fnmatch("*_ManUtd_*_*.png", entry->d_name, 0) != 0)
-            {
-                sprintf(fileName, "%s/%s", "players", entry->d_name);
-                if (unlink(fileName) != 0)
-                {
-                    printf("Error deleting file: %s\n", fileName);
-                }
-            }
+    else
+    { 
+        // check apakah process merupakan parent process
+        int status;
+        waitpid(pid, &status, 0);
+        if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+        {
+            printf("Error downloading players\n");
+            exit(EXIT_FAILURE);
         }
     }
-
-    closedir(dir);
 }
 
 void categorizePlayers()
@@ -114,40 +78,75 @@ void categorizePlayers()
     struct dirent *entry;
     char *image_file;
     char *positions[] = {"Kiper", "Bek", "Gelandang", "Penyerang"};
+    int status;
+    char buffer[1024];
+    size_t bytes_read;
+
 
     if (dir == NULL)
     {
-        printf("Error opening directoryn");
+        printf("Direktori belum dibuat \n");
         exit(EXIT_FAILURE);
     }
+
+    // buat direktori baru
+    for (int i = 0; i < 4; i++)
+    {
+        char dir_name[max_filename];
+        sprintf(dir_name, "./%s", positions[i]);
+
+        char* args[] = {"mkdir", dir_name, NULL};
+        pid_t pid = fork();
+
+        if (pid == -1)
+        {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        }
+        else if (pid == 0)
+        {
+            execvp(args[0], args);
+            perror("execvp");
+            exit(EXIT_FAILURE);
+        }
+        else
+        {
+            
+            waitpid(pid, &status, 0);
+            if (WIFEXITED(status) && WEXITSTATUS(status) != 0)
+            {
+                printf("Error membuat direktori: %s\n", dir_name);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+
+    rewinddir(dir);
 
     while ((entry = readdir(dir)) != NULL)
     {
         if (entry->d_type == DT_REG)
-        { // if entry is a regular file
+        { 
+            // cek bentuk file
             image_file = entry->d_name;
             char *ext = strrchr(image_file, '.');
-
-            if (ext != NULL && (strcmp(ext, ".jpeg") == 0 || strcmp(ext, ".jpg") == 0 || strcmp(ext, ".png") == 0))
+            
+            // cek kalau extension tipe .png
+            if (ext != NULL && strcmp(ext, ".png") == 0)
             {
-                int i;
-                for (i = 0; i < sizeof(positions) / sizeof(positions[0]); i++)
+                
+                for (int i = 0; i < 4; i++)
                 {
                     if (strstr(image_file, positions[i]) != NULL)
                     {
-                        char new_path[MAX_FILENAME];
+                        char new_path[max_filename];
                         sprintf(new_path, "./%s/%s", positions[i], image_file);
 
-                        char old_path[MAX_FILENAME];
+                        char old_path[max_filename];
                         sprintf(old_path, "./players/%s", image_file);
 
                         FILE *old_file = fopen(old_path, "rb");
-                        if (old_file == NULL)
-                        {
-                            perror("Unable to read file");
-                            break;
-                        }
-
+                        
                         FILE *new_file = fopen(new_path, "wb");
                         if (new_file == NULL)
                         {
@@ -156,8 +155,6 @@ void categorizePlayers()
                             break;
                         }
 
-                        char buffer[1024];
-                        size_t bytes_read;
                         while ((bytes_read = fread(buffer, 1, sizeof(buffer), old_file)) > 0)
                         {
                             fwrite(buffer, 1, bytes_read, new_file);
@@ -175,52 +172,81 @@ void categorizePlayers()
     closedir(dir);
 }
 
+void filterPlayers()
+{
+    DIR *dir = opendir("players");
+    struct dirent *entry;
+    char fileName[max_filename];
+
+    while ((entry = readdir(dir)) != NULL)
+    {
+        if (entry->d_type == DT_REG)
+        { 
+            if (fnmatch("*_ManUtd_*_*.png", entry->d_name, 0) != 0)
+            {
+                sprintf(fileName, "%s/%s", "players", entry->d_name);
+                if (unlink(fileName) != 0)
+                {
+                    printf("Tidak bisa menghapus file: %s\n", fileName);
+                }
+            }
+        }
+    }
+
+    if(dir == NULL){
+        printf("Direktori tidak ada");
+    }
+
+    closedir(dir);
+}
+
 void buatTim(int bek, int gelandang, int striker)
 {
-    // Create a file with the appropriate file name
+
+    // Buat direktori sesuai dengan format nama yang ditentukan
     char fileName[50];
-    sprintf(fileName, "Formasi_%d_%d_%d.txt", bek, gelandang, striker);
+    sprintf(fileName, "/home/reyhanqb/Formasi_%d_%d_%d.txt", bek, gelandang, striker);
     FILE *fp = fopen(fileName, "w");
 
-    // Write the formation to the file
-    fprintf(fp, "Formasi %d-%d-%dn", bek, gelandang, striker);
+    // insert formasi
+    fprintf(fp, "Formasi %d-%d-%d \n", bek, gelandang, striker);
 
-    // Get the list of players
-    char *beks[8] = {"Bissaka", "Dalot", "Lindelof", "Maguire", "Malacia", "Martinez", "Shaw", "Varane"};
-    char *gelandangs[7] = {"Casemiro", "Eriksen", "Fernandes", "Fred", "McTominay", "Sabitzer", "VanDeBeek"};
+    // inisaliasi player MU
+    char *defenders[8] = {"Bissaka", "Dalot", "Lindelof", "Maguire", "Malacia", "Martinez", "Shaw", "Varane"};
+    char *midfielders[7] = {"Casemiro", "Eriksen", "Fernandes", "Fred", "McTominay", "Sabitzer", "VanDeBeek"};
     char *strikers[5] = {"Antony", "Martial", "Rashford", "Sancho", "Weghorst"};
 
-    // Sort the players by name (ascending order)
-    int numBeks = sizeof(beks) / sizeof(beks[0]);
-    int numGelandangs = sizeof(gelandangs) / sizeof(gelandangs[0]);
-    int numStrikers = sizeof(strikers) / sizeof(strikers[0]);
-    for (int i = 0; i < numBeks - 1; i++)
+    // sort player sesuai rating
+    int jmlBek = sizeof(defenders) / sizeof(defenders[0]);
+    int jmlGelandang = sizeof(midfielders) / sizeof(midfielders[0]);
+    int jmlPenyerang = sizeof(strikers) / sizeof(strikers[0]);
+    for (int i = 0; i < jmlBek - 1; i++)
     {
-        for (int j = i + 1; j < numBeks; j++)
+        for (int j = i + 1; j < jmlBek; j++)
         {
-            if (beks[j] < beks[i])
+            if (defenders[j] < defenders[i])
             {
-                char *temp = beks[i];
-                beks[i] = beks[j];
-                beks[j] = temp;
+                char *temp = defenders[i];
+                defenders[i] = defenders[j];
+                defenders[j] = temp;
             }
         }
     }
-    for (int i = 0; i < numGelandangs - 1; i++)
+    for (int i = 0; i < jmlGelandang - 1; i++)
     {
-        for (int j = i + 1; j < numGelandangs; j++)
+        for (int j = i + 1; j < jmlGelandang; j++)
         {
-            if (gelandangs[j] < gelandangs[i])
+            if (midfielders[j] < midfielders[i])
             {
-                char *temp = gelandangs[i];
-                gelandangs[i] = gelandangs[j];
-                gelandangs[j] = temp;
+                char *temp = midfielders[i];
+                midfielders[i] = midfielders[j];
+                midfielders[j] = temp;
             }
         }
     }
-    for (int i = 0; i < numStrikers - 1; i++)
+    for (int i = 0; i < jmlPenyerang - 1; i++)
     {
-        for (int j = i + 1; j < numStrikers; j++)
+        for (int j = i + 1; j < jmlPenyerang; j++)
         {
             if (strikers[j] < strikers[i])
             {
@@ -231,21 +257,27 @@ void buatTim(int bek, int gelandang, int striker)
         }
     }
 
-    // Write the players with the highest indices to the file
-    fprintf(fp, "nBEK:n");
-    for (int i = numBeks - 1; i >= (numBeks - bek) && i >= 0; i--)
+    // Print player dengan rating tertinggi pada tiap posisi
+
+
+    // Karena diminta skuad terbaik, otomatis kipernya De Gea
+    fprintf(fp, "\n Kiper: \n");
+    fprintf(fp, "\n De Gea \n");
+
+    fprintf(fp, "\n Bek: \n");
+    for (int i = jmlBek - 1; i >= (jmlBek - bek) && i >= 0; i--)
     {
-        fprintf(fp, "%sn", beks[i]);
+        fprintf(fp, "%s\n", defenders[i]);
     }
-    fprintf(fp, "nGELANDANG:n");
-    for (int i = numGelandangs - 1; i >= (numGelandangs - gelandang) && i >= 0; i--)
+    fprintf(fp, "\n Gelandang: \n");
+    for (int i = jmlGelandang - 1; i >= (jmlGelandang - gelandang) && i >= 0; i--)
     {
-        fprintf(fp, "%sn", gelandangs[i]);
+        fprintf(fp, "%s\n", midfielders[i]);
     }
-    fprintf(fp, "nPENYERANG:n");
-    for (int i = numStrikers - 1; i >= (numStrikers - striker) && i >= 0; i--)
+    fprintf(fp, "\n Penyerang: \n");
+    for (int i = jmlPenyerang - 1; i >= (jmlPenyerang - striker) && i >= 0; i--)
     {
-        fprintf(fp, "%sn", strikers[i]);
+        fprintf(fp, "%s\n", strikers[i]);
     }
 
     fclose(fp);
@@ -253,10 +285,24 @@ void buatTim(int bek, int gelandang, int striker)
 
 int main()
 {
+    int bek, gelandang, striker;
+    
+
     downloadZip();
     extractZip();
     filterPlayers();
     categorizePlayers();
-    buatTim(4, 4, 2); 
+
+    printf("Masukkan jumlah bek : ");
+    scanf("%d", &bek);
+
+    printf("Masukkan jumlah gelandang : ");
+    scanf("%d", &gelandang);
+
+    printf("Masukkan jumlah penyerang : ");
+    scanf("%d", &striker);
+
+    buatTim(bek, gelandang, striker);
+
     return 0;
 }
