@@ -124,6 +124,7 @@ void sigterm_handler(int sig) {
     is_running = false;
 }
 
+
 //fungsi menghapus folder
 void delete_folder(const char* nama_folder) {
     sleep(5);
