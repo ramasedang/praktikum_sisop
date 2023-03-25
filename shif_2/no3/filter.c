@@ -212,9 +212,9 @@ void buatTim(int bek, int gelandang, int striker)
     fprintf(fp, "Formasi %d-%d-%d \n", bek, gelandang, striker);
 
     // inisaliasi player MU
-    char *defenders[8] = {"Bissaka", "Dalot", "Lindelof", "Maguire", "Malacia", "Martinez", "Shaw", "Varane"};
-    char *midfielders[7] = {"Casemiro", "Eriksen", "Fernandes", "Fred", "McTominay", "Sabitzer", "VanDeBeek"};
-    char *strikers[5] = {"Antony", "Martial", "Rashford", "Sancho", "Weghorst"};
+    char *defenders[8] = {"Bissaka_ManUtd_80_Bek", "Dalot_ManUtd_Bek_80", "Lindelof_ManUtd_Bek_79", "Maguire_ManUtd_Bek_80", "Malacia_ManUtd_Bek_79", "Martinez_ManUtd_Bek_83", "Shaw_ManUtd_Bek_82", "Varane_ManUtd_Bek_85"};
+    char *midfielders[7] = {"Casemiro_ManUtd_89", "Eriksen_ManUtd_83", "Fernandes_ManUtd_86", "Fred_ManUtd_Gelandang_80", "McTominay_ManUtd_Gelandang_79", "Sabitzer_ManUtd_Gelandang_81", "VanDeBeek_ManUtd_Gelandang_77"};
+    char *strikers[5] = {"Antony_ManUtd_Penyerang_80", "Martial_ManUtd_Penyerang_81", "Rashford_ManUtd_Penyerang_84", "Sancho_ManUtd_Penyerang_83", "Weghorst_ManUtd_Penyerang_83"};
 
     // sort player sesuai rating
     int jmlBek = sizeof(defenders) / sizeof(defenders[0]);
@@ -262,7 +262,7 @@ void buatTim(int bek, int gelandang, int striker)
 
     // Karena diminta skuad terbaik, otomatis kipernya De Gea
     fprintf(fp, "\n Kiper: \n");
-    fprintf(fp, "\n De Gea \n");
+    fprintf(fp, "\n DeGea_ManUtd_Kiper_87 \n");
 
     fprintf(fp, "\n Bek: \n");
     for (int i = jmlBek - 1; i >= (jmlBek - bek) && i >= 0; i--)
