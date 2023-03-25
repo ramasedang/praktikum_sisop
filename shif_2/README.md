@@ -824,28 +824,30 @@ int main(int argc, char** argv) {
     // mengubah file mode mask
     umask(0);
 
-    // create new session
+    // membuat new session
     sid = setsid();
     if (sid < 0) {
         exit(EXIT_FAILURE);
     }
 
-    // change working directory
+    // mengubah working directory
     if (chdir(".") < 0) {
         exit(EXIT_FAILURE);
     }
 
-    // close standard file descriptors
+    // menutup standard file descriptors
     close(STDIN_FILENO);
     close(STDOUT_FILENO);
     close(STDERR_FILENO);
 
+    //file killer
     create_killer(argv[0]);
 
-    // start the main loop
+    // memulai main loop
     while (is_running) {
         time_t t = time(NULL);
         char nama_folder[50];
+        //format folder
         sprintf(nama_folder, "%04d-%02d-%02d_%02d:%02d:%02d", 
             1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
             localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec);
@@ -882,6 +884,7 @@ void sigterm_handler(int sig) {
     is_running = false;
 }
 
+
 //fungsi menghapus folder
 void delete_folder(const char* nama_folder) {
     sleep(5);
@@ -908,10 +911,12 @@ void zip_folder(const char* nama_folder) {
 void download_gambar(const char* nama_folder, int thread_num) {
     time_t t = time(NULL);
     char nama_gambar[50];
+    //format gambar
     sprintf(nama_gambar, "%04d-%02d-%02d_%02d:%02d:%02d_%d.jpg",
         1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
         localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec, thread_num);
     char url[50];
+    //Tiap gambar berbentuk persegi dengan ukuran (t%1000)+50 piksel dimana t adalah detik Epoch Unix
     sprintf(url, "https://picsum.photos/%d", (int) (t%1000)+50);
     char path[100];
     sprintf(path, "%s/%s", nama_folder, nama_gambar);
@@ -939,8 +944,10 @@ void create_killer(char* nama_program) {
     //menghapus file killer setelah digunakan
     fprintf(fp, "rm killer\n");
     fclose(fp);
+    //membuat file agar executable
     chmod("killer", 0755);
 }
+
 ```
 ## Test Output
 ```./lukisan -a```
