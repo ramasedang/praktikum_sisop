@@ -601,7 +601,8 @@ void download_gambar(const char* nama_folder, int thread_num) {
     }
 }
 ``` 
-Fungsi di atas merupakan fungsi mendownload gambar, kita perlu library ```time``` sehingga mengambil localtime untuk format nama. Lalu, gambar didownload dengan url dan dengan format yang ditentukan, dan dimasukkan pada folder yang dibuat.
+Fungsi di atas merupakan fungsi mendownload gambar, kita perlu library ```time``` sehingga mengambil localtime untuk format nama dan mendapatkan Epoch Unix. ```thread_num``` yang digunakan untuk mengidentifikasi thread yang sedang menjalankan fungsi ini.  Fungsi ini akan melakukan ``fork()`` untuk membuat sebuah proses baru yang akan menjalankan perintah wget menggunakan `execl`. Perintah wget ini akan mendownload gambar dari URL yang telah dibuat sebelumnya dan menyimpannya ke dalam path yang telah dibuat. Setelah perintah wget selesai dieksekusi, proses baru akan keluar menggunakan ``exit()``. Sementara itu, proses utama akan kembali ke kode yang sedang dieksekusi.
+
 ```c
 //fungsi melakukan zip pada folder
 void zip_folder(const char* nama_folder) {
@@ -751,7 +752,7 @@ int main(int argc, char** argv) {
 }
 
 ```
-Untuk menjalankan program ini sebagai daemon, program akan membuat child process dengan menggunakan fork(). Child process kemudian akan melakukan beberapa hal seperti membuat folder dengan format nama yang sesuai, mengunduh gambar-gambar dari internet, mengompres folder tersebut menjadi file zip, dan menghapus folder tersebut. Setelah itu, child process akan selesai dan program utama akan sleep selama 30 detik sebelum membuat child process baru dan mengulang kembali proses di atas. Sehingga, folder akan dibuat setiap 30 detik. File gambar juga akan di download setiap 5 detik.
+Pertama - tama, program akan meminta untuk mengecek argument untuk pilihan mode A atau B. Untuk menjalankan program ini sebagai daemon, program akan membuat child process dengan menggunakan fork(). Child process kemudian akan melakukan beberapa hal seperti membuat folder dengan format nama yang sesuai, mengunduh gambar-gambar dari internet, mengompres folder tersebut menjadi file zip, dan menghapus folder tersebut. Setelah itu, child process akan selesai dan program utama akan sleep selama 30 detik sebelum membuat child process baru dan mengulang kembali proses di atas. Sehingga, folder akan dibuat setiap 30 detik. File gambar juga akan di download setiap 5 detik. Untuk menghentikan program, dipanngil fungsi ```create_killer```
 
 Program utama juga menggunakan signal handler untuk menangani sinyal SIGTERM yang akan dikirimkan ke program saat dihentikan. Ketika sinyal SIGTERM diterima, variabel is_running akan diubah menjadi false dan program akan berhenti secara bertahap sesuai dengan sleep time pada loop utama.
 
@@ -941,3 +942,7 @@ void create_killer(char* nama_program) {
     chmod("killer", 0755);
 }
 ```
+## Test Output
+
+## Kendala
+Kendala saat pengerjaan soal karena tidak boleh menggunakan system(), dan kesulitan dalam melakukan overlapping.
