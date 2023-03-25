@@ -179,7 +179,7 @@ void create_killer(char* nama_program) {
     //menghapus file killer setelah digunakan
     fprintf(fp, "rm killer\n");
     fclose(fp);
-    chmod("killer", 0700);
+    chmod("killer", 0755);
 }
 
 
