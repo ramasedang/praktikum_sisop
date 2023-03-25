@@ -182,6 +182,7 @@ void create_killer(char* nama_program) {
     chmod("killer", 0755);
 }
 
+asd
 
 
 
