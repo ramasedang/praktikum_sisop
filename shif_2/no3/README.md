@@ -639,8 +639,12 @@ int main()
 ```
 
 # Test Output
-![output_txt_file](https://user-images.githubusercontent.com/107137535/230083521-21ad5c96-6fe5-4174-b225-63b3b2615ade.png)
+
+Program setelah di run
 ![test_run_filter](https://user-images.githubusercontent.com/107137535/230083534-51421004-0798-4c13-9ea6-cc72987c8b19.png)
+File .txt yang dihasilkan
+![output_txt_file](https://user-images.githubusercontent.com/107137535/230083521-21ad5c96-6fe5-4174-b225-63b3b2615ade.png)
+
 
 # Kendala
 Beberapa kali download zip file gagal dan file txt yang dihasilkan outputnya tidak sesuai, selain itu tidak boleh menggunakan system() dan mkdir() maka harus dilakukan beberapa step tambahan.
