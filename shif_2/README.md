@@ -1617,3 +1617,260 @@ File .txt yang dihasilkan
 
 # Kendala
 Beberapa kali download zip file gagal dan file txt yang dihasilkan outputnya tidak sesuai, selain itu tidak boleh menggunakan system() dan mkdir() maka harus dilakukan beberapa step tambahan.
+
+## Soal 4
+## Analisa soal:
+Banabil ingin melatih fokusnya dengan membuat program C yang menyerupai crontab dan dapat menerima argumen berupa Jam, Menit, Detik, Tanda asterisk, serta path file .sh. Program ini harus mengeluarkan pesan "error" jika argumen tidak sesuai, berjalan di background, hanya menerima satu konfigurasi cron, dan memiliki CPU state minimum. Banabil harus memvalidasi argumen, menjalankan script bash, dan mengoptimalkan program agar hanya berjalan ketika diperlukan.
+## Cara pengerjaan soal 4:
+Untuk mengerjakan soal yang diberikan saya membuat beberapa fungsi untuk mnegerjakannya:
+
+void cetak_pesan_error()
+Fungsi ini digunakan untuk mencetak pesan error pada layar ketika terjadi kesalahan pada program, seperti argumen yang tidak valid.
+
+void tangani_sinyal(int signum)
+Fungsi ini digunakan untuk menangani sinyal yang diterima oleh program. Pada program ini, sinyal yang ditangani adalah SIGHUP, yang tidak melakukan apa-apa dalam fungsi ini.
+
+void buat_proses_latar()
+Fungsi ini digunakan untuk membuat proses di latar belakang. Fungsi ini menggunakan beberapa teknik, seperti fork() dan setsid(), untuk membuat proses berjalan di latar belakang.
+
+int parse_waktu_string(char *waktu_str, int min_value, int max_value)
+Fungsi ini digunakan untuk mem-parsing string waktu menjadi integer. Fungsi ini akan memeriksa apakah string waktu tersebut mengandung tanda slash, dan jika iya, fungsi akan mengembalikan nilai integer hasil bagi antara nilai dalam string dengan pembagi yang ditentukan di belakang tanda slash. Jika tidak, fungsi akan mengembalikan nilai integer dari string tersebut. Fungsi ini juga akan memvalidasi nilai integer apakah sudah sesuai dengan rentang yang ditentukan.
+
+int perlu_dieksekusi(char *jam_str, char *menit_str, char *detik_str)
+Fungsi ini digunakan untuk memeriksa apakah tugas cron perlu dijalankan pada waktu sekarang. Fungsi ini akan memeriksa apakah nilai jam, menit, dan detik sama dengan waktu sekarang. Jika iya, fungsi akan mengembalikan nilai 1, yang menandakan tugas cron harus dijalankan. Jika tidak, fungsi akan mengembalikan nilai 0, yang menandakan tugas cron tidak perlu dijalankan.
+
+void jalankan_perintah(char *path_perintah)
+Fungsi ini digunakan untuk menjalankan script bash yang ditentukan. Fungsi ini menggunakan teknik fork() dan execv() untuk menjalankan script bash pada proses yang terpisah dari proses utama.
+
+int main(int argc, char *argv[])
+Fungsi ini adalah fungsi utama dari program. Fungsi ini digunakan untuk menerima argumen dari baris perintah dan memvalidasi argumen tersebut. Selain itu, fungsi ini juga berisi loop utama yang digunakan untuk mengecek apakah tugas cron perlu dijalankan pada setiap detik, dan jika iya, fungsi akan menjalankan script bash yang ditentukan.
+
+
+bagian terpenting dari program ini agar berjalan di background berikut kodenya: 
+```c
+void buat_proses_latar()
+{
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0)
+    {
+        exit(EXIT_SUCCESS);
+    }
+    if (setsid() < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    umask(0);
+    chdir("/");
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+}
+
+```
+Pada fungsi ini, pertama-tama dilakukan fork() untuk membuat proses baru. Jika fork() berhasil, maka proses utama akan keluar dari program menggunakan exit(EXIT_SUCCESS). Sedangkan proses baru akan berlanjut ke blok kode selanjutnya.
+
+Kemudian, pada proses baru, fungsi setsid() digunakan untuk membuat proses baru menjadi session leader. Jika setsid() gagal, maka proses baru akan keluar dari program menggunakan exit(EXIT_FAILURE).
+
+Selanjutnya, fungsi umask(0) digunakan untuk mengubah mode file permission agar proses baru memiliki hak akses penuh pada semua file yang dibuatnya.
+
+Fungsi chdir("/") digunakan untuk mengubah working directory menjadi root directory.
+
+Terakhir, tiga file descriptor standar STDIN_FILENO, STDOUT_FILENO, dan STDERR_FILENO ditutup menggunakan close() agar proses baru tidak memiliki hubungan dengan terminal.
+## Source code
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/time.h>
+
+#define MAX_PANJANG_PERINTAH 100
+
+void cetak_pesan_error();
+void tangani_sinyal(int signum);
+void buat_proses_latar();
+int parse_waktu_string(char *waktu_str, int min_value, int max_value);
+int perlu_dieksekusi(char *jam_str, char *menit_str, char *detik_str);
+void jalankan_perintah(char *path_perintah);
+
+int main(int argc, char *argv[])
+{
+    if (argc != 5)
+    {
+        cetak_pesan_error();
+        return 1;
+    }
+
+    int jam = parse_waktu_string(argv[1], 0, 23);
+    int menit = parse_waktu_string(argv[2], 0, 59);
+    int detik = parse_waktu_string(argv[3], 0, 59);
+    char *path_perintah = argv[4];
+
+    signal(SIGCHLD, SIG_IGN);
+    signal(SIGHUP, tangani_sinyal);
+
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0)
+    {
+        exit(EXIT_SUCCESS);
+    }
+
+    setsid();
+
+    pid = fork();
+    if (pid < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0)
+    {
+        exit(EXIT_SUCCESS);
+    }
+
+    buat_proses_latar();
+
+    while (1)
+    {
+        if (perlu_dieksekusi(argv[1], argv[2], argv[3]))
+        {
+            jalankan_perintah(path_perintah);
+        }
+
+        sleep(1);
+    }
+
+    return 0;
+}
+
+void cetak_pesan_error()
+{
+    printf("Error: Argumen tidak valid\n");
+}
+
+void tangani_sinyal(int signum)
+{
+    // tidak melakukan apa-apa
+}
+
+void buat_proses_latar()
+{
+    pid_t pid = fork();
+    if (pid < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    if (pid > 0)
+    {
+        exit(EXIT_SUCCESS);
+    }
+    if (setsid() < 0)
+    {
+        exit(EXIT_FAILURE);
+    }
+    umask(0);
+    chdir("/");
+    close(STDIN_FILENO);
+    close(STDOUT_FILENO);
+    close(STDERR_FILENO);
+}
+
+int parse_waktu_string(char *waktu_str, int min_value, int max_value)
+{
+    if (strcmp(waktu_str, "*") == 0)
+    {
+        return -1;
+    }
+    else if (strchr(waktu_str, '/') != NULL)
+    {
+        char *slash_pos = strchr(waktu_str, '/');
+        int pembagi = atoi(slash_pos + 1);
+        if (pembagi == 0)
+        {
+            cetak_pesan_error();
+            exit(1);
+        }
+        int nilai = atoi(waktu_str);
+        if (nilai < min_value || nilai > max_value)
+        {
+            cetak_pesan_error();
+            exit(1);
+        }
+        return nilai;
+    }
+    else
+    {
+        int nilai = atoi(waktu_str);
+        if (nilai < min_value || nilai > max_value)
+        {
+            cetak_pesan_error();
+            exit(1);
+        }
+        return nilai;
+    }
+}
+
+int perlu_dieksekusi(char *jam_str, char *menit_str, char *detik_str)
+{
+    time_t now = time(NULL);
+    struct tm *waktu_sekarang = localtime(&now);
+    int jam = parse_waktu_string(jam_str, 0, 23);
+    int menit = parse_waktu_string(menit_str, 0, 59);
+    int detik = parse_waktu_string(detik_str, 0, 59);
+    int interval = 1;
+    if (jam != -1)
+    {
+        interval *= (jam == waktu_sekarang->tm_hour) ? 1 : 0;
+    }
+    if (menit != -1)
+    {
+        int nilai_menit = parse_waktu_string(menit_str, 0, 59);
+        if (nilai_menit == -1)
+        {
+            interval *= 1;
+        }
+        else
+        {
+            interval *= ((waktu_sekarang->tm_min - nilai_menit) % nilai_menit == 0) ? 1 : 0;
+        }
+    }
+    if (detik != -1)
+    {
+        int nilai_detik = parse_waktu_string(detik_str, 0, 59);
+        if (nilai_detik == -1)
+        {
+            interval *= 1;
+        }
+        else
+        {
+            interval *= ((waktu_sekarang->tm_sec - nilai_detik) % nilai_detik == 0) ? 1 : 0;
+        }
+    }
+    return interval;
+}
+
+void jalankan_perintah(char *path_perintah)
+{
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        char *argv[] = {"/bin/bash", path_perintah, NULL};
+        execv(argv[0], argv);
+    }
+}
+```
+## Test output
+[![HetcAH7.md.png](https://iili.io/HetcAH7.md.png)](https://freeimage.host/i/HetcAH7)
+## Kendala
+Ada sedikit kendala untuk membuat kode ini menjadi background process
