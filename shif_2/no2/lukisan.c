@@ -21,7 +21,7 @@ void delete_folder(const char* nama_folder);
 //fungsi melakukan zip pada folder
 void zip_folder(const char* nama_folder);
 //fungsi mendownload gambar sesuai perintah pada soal
-void download_gambar(const char* nama_folder, int thread_num);
+void download_gambar(const char* nama_folder);
 //fungsi membuat file killer sesuai dengan Modenya
 void create_killer(char* nama_program);
 
@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
 
             // download gambar
             for (int i = 0; i < 15; i++) {
-                download_gambar(nama_folder, i + 1);
+                download_gambar(nama_folder);
                 sleep(5);
             }
 
@@ -148,13 +148,13 @@ void zip_folder(const char* nama_folder) {
 }
 
 //fungsi mendownload gambar sesuai perintah pada soal
-void download_gambar(const char* nama_folder, int thread_num) {
+void download_gambar(const char* nama_folder) {
     time_t t = time(NULL);
     char nama_gambar[50];
     //format gambar
-    sprintf(nama_gambar, "%04d-%02d-%02d_%02d:%02d:%02d_%d.jpg",
+    sprintf(nama_gambar, "%04d-%02d-%02d_%02d:%02d:%02d.jpg",
         1900 + localtime(&t)->tm_year, localtime(&t)->tm_mon + 1, localtime(&t)->tm_mday,
-        localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec, thread_num);
+        localtime(&t)->tm_hour, localtime(&t)->tm_min, localtime(&t)->tm_sec);
     char url[50];
     //Tiap gambar berbentuk persegi dengan ukuran (t%1000)+50 piksel dimana t adalah detik Epoch Unix
     sprintf(url, "https://picsum.photos/%d", (int) (t%1000)+50);
