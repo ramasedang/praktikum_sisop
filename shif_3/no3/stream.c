@@ -15,19 +15,122 @@
 sem_t sem;
 sem_t user_sem; // Declare the semaphore
 
-#define MSG_SIZE 256
-#define MAX_USER 2
+#define MSG_SIZEeeeeeeeee 256
+#define MAKSIMAL_USERRR 2
 
 int user_count = 0;
 
 typedef struct
 {
     long msg_type;
-    char msg_text[MSG_SIZE];
+    char msg_text[MSG_SIZEeeeeeeeee];
     char user_id[10]; // Add this line
 } message;
 
-void rot13(char *str)
+
+void sort_playlist();
+void decrypt_playlist();
+void search_playlist(const char *query);
+void ini_rot13(char *str);
+
+void ini_decode_base64(const char *str, char *decoded_str);
+
+void ini_hex_decode(const char *str, char *decoded_str);
+void add_song(const char *user_id, const char *song);
+void handle_list_command();
+void handle_add_command(const char *user_id, const char *command);
+void handle_decrypt_command();
+
+int can_access_system();
+
+void release_system_access();
+
+int main()
+{
+
+    int BISMILLAH_MAX = 0;
+    sem_init(&sem, 0, 2);      // Initialize the semaphore for the ADD command
+    sem_init(&user_sem, 0, 1); // Initialize the semaphore for user access
+
+    key_t key = ftok("song-playlist.json", 65);
+
+    int msgid = msgget(key, 0666 | IPC_CREAT);
+    message msg;
+
+    while (1)
+    {
+        msgrcv(msgid, &msg, sizeof(msg), 1, 0);
+
+        sem_wait(&user_sem); // Lock user semaphore before checking user access
+        if (strncmp(msg.msg_text, "EXIT", 4) == 0)
+        {
+            sem_post(&user_sem); // Unlock user semaphore if the system cannot be accessed
+            BISMILLAH_MAX--;
+        }
+        if (BISMILLAH_MAX < 3)
+        {
+            if (can_access_system()) // Check if the system can be accessed by the user
+            {
+                sem_post(&user_sem); // Unlock user semaphore after checking
+
+                if (strncmp(msg.msg_text, "DECRYPT", 7) == 0)
+                {
+                    handle_decrypt_command();
+                    sort_playlist(); // Add this line
+                }
+                else if (strncmp(msg.msg_text, "LIST", 4) == 0)
+                {
+                    handle_list_command();
+                }
+                else if (strncmp(msg.msg_text, "PLAY", 4) == 0)
+                {
+                    char query[256];
+                    sscanf(msg.msg_text, "PLAY %[^\n]", query);
+                    search_playlist(query);
+                }
+                else if (strncmp(msg.msg_text, "ADD", 3) == 0)
+                {
+                    char song[256];
+                    sscanf(msg.msg_text, "ADD %[^\n]", song);
+
+                    sem_wait(&sem);                        // Lock semaphore before adding a song
+                    handle_add_command(msg.user_id, song); // Pass the user_id when adding a song
+                    sem_post(&sem);                        // Unlock semaphore after adding a song
+                }
+                // add handle msg "start"
+                else if (strncmp(msg.msg_text, "START", 5) == 0)
+                {
+                    BISMILLAH_MAX++;
+                }
+                else
+                {
+                    printf("INVALID COMMAND\n");
+                    printf("BISMILLAH MAX : %d\n", BISMILLAH_MAX);
+                }
+
+                sem_wait(&user_sem);     // Lock user semaphore before releasing system access
+                release_system_access(); // Decrease the user count after the user has finished using the system
+                sem_post(&user_sem);     // Unlock user semaphore after releasing system access
+            }
+        }
+        else
+        {
+            sem_post(&user_sem); // Unlock user semaphore if the system cannot be accessed
+            printf("STREAM SYSTEM OVERLOAD\n");
+            // print bismillah max
+            printf("BISMILLAH MAX : %d\n", BISMILLAH_MAX);
+        }
+    }
+
+    msgctl(msgid, IPC_RMID, NULL);
+
+    sem_destroy(&sem);      // Destroy the semaphore for the ADD command
+    sem_destroy(&user_sem); // Destroy the semaphore for user access
+
+    return 0;
+}
+
+void ini_rot13(char *str)
 {
     for (int i = 0; str[i]; i++)
     {
@@ -43,7 +146,7 @@ void rot13(char *str)
     }
 }
 
-void base64_decode(const char *str, char *decoded_str)
+void ini_decode_base64(const char *str, char *decoded_str)
 {
     BIO *bio, *b64;
     size_t decodeLen = strlen(str), len = 0;
@@ -59,7 +162,7 @@ void base64_decode(const char *str, char *decoded_str)
     BIO_free_all(bio);
 }
 
-void hex_decode(const char *str, char *decoded_str)
+void ini_hex_decode(const char *str, char *decoded_str)
 {
     size_t len = strlen(str);
     for (size_t i = 0; i < len; i += 2)
@@ -91,18 +194,18 @@ void decrypt_playlist()
         const char *song = json_string_value(json_object_get(value, "song"));
         char decrypted_song[256];
 
-        if (strcmp(method, "rot13") == 0)
+        if (strcmp(method, "ini_rot13") == 0)
         {
             strcpy(decrypted_song, song);
-            rot13(decrypted_song);
+            ini_rot13(decrypted_song);
         }
         else if (strcmp(method, "base64") == 0)
         {
-            base64_decode(song, decrypted_song);
+            ini_decode_base64(song, decrypted_song);
         }
         else if (strcmp(method, "hex") == 0)
         {
-            hex_decode(song, decrypted_song);
+            ini_hex_decode(song, decrypted_song);
         }
         else
         {
@@ -234,7 +337,7 @@ void handle_add_command(const char *user_id, const char *command)
 
 int can_access_system()
 {
-    // if (user_count < MAX_USER)
+    // if (user_count < MAKSIMAL_USERRR)
     // {
     //     user_count++;
     //     return 1;
@@ -249,89 +352,4 @@ int can_access_system()
 void release_system_access()
 {
     // user_count--;
-}
-
-int main()
-{
-
-    int BISMILLAH_MAX = 0;
-    sem_init(&sem, 0, 2);      // Initialize the semaphore for the ADD command
-    sem_init(&user_sem, 0, 1); // Initialize the semaphore for user access
-
-    key_t key = ftok("song-playlist.json", 65);
-
-    int msgid = msgget(key, 0666 | IPC_CREAT);
-    message msg;
-
-    while (1)
-    {
-        msgrcv(msgid, &msg, sizeof(msg), 1, 0);
-
-        sem_wait(&user_sem); // Lock user semaphore before checking user access
-        if(strncmp(msg.msg_text, "EXIT", 4) == 0){
-                sem_post(&user_sem); // Unlock user semaphore if the system cannot be accessed
-                BISMILLAH_MAX--;
-        }
-        if (BISMILLAH_MAX < 3)
-        {
-            if (can_access_system()) // Check if the system can be accessed by the user
-            {
-                sem_post(&user_sem); // Unlock user semaphore after checking
-
-                if (strncmp(msg.msg_text, "DECRYPT", 7) == 0)
-                {
-                    handle_decrypt_command();
-                    sort_playlist(); // Add this line
-                }
-                else if (strncmp(msg.msg_text, "LIST", 4) == 0)
-                {
-                    handle_list_command();
-                }
-                else if (strncmp(msg.msg_text, "PLAY", 4) == 0)
-                {
-                    char query[256];
-                    sscanf(msg.msg_text, "PLAY %[^\n]", query);
-                    search_playlist(query);
-                }
-                else if (strncmp(msg.msg_text, "ADD", 3) == 0)
-                {
-                    char song[256];
-                    sscanf(msg.msg_text, "ADD %[^\n]", song);
-
-                    sem_wait(&sem);                        // Lock semaphore before adding a song
-                    handle_add_command(msg.user_id, song); // Pass the user_id when adding a song
-                    sem_post(&sem);                        // Unlock semaphore after adding a song
-                }
-                // add handle msg "start"
-                else if (strncmp(msg.msg_text, "START", 5) == 0)
-                {
-                    BISMILLAH_MAX++;
-                }
-                else
-                {
-                    printf("INVALID COMMAND\n");
-                    printf("BISMILLAH MAX : %d\n", BISMILLAH_MAX);
-                }
-
-                sem_wait(&user_sem);     // Lock user semaphore before releasing system access
-                release_system_access(); // Decrease the user count after the user has finished using the system
-                sem_post(&user_sem);     // Unlock user semaphore after releasing system access
-            }
-            
-        }
-        else
-        {
-            sem_post(&user_sem); // Unlock user semaphore if the system cannot be accessed
-            printf("STREAM SYSTEM OVERLOAD\n");
-            // print bismillah max
-            printf("BISMILLAH MAX : %d\n", BISMILLAH_MAX);
-        }
-    }
-
-    msgctl(msgid, IPC_RMID, NULL);
-
-    sem_destroy(&sem);      // Destroy the semaphore for the ADD command
-    sem_destroy(&user_sem); // Destroy the semaphore for user access
-
-    return 0;
 }
