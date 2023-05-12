@@ -510,6 +510,7 @@ void find_hfcode(struct HfNode *root, char *code, int code_len, char *input, cha
 
 ```
 ## Test Output
+![image](https://github.com/ramasedang/praktikum_sisop/assets/100351038/75ab96a8-a26e-4266-9b09-7ab289b0a1c3)
 
 ## Kendala
 Kendala yang dialami adalah masih kurang pemahaan tentang algoritma huffman untuk lossless compression sehingga kesulitan dalam pengerjaan.
