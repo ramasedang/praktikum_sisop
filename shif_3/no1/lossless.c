@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 
 	printf("\nTotal bits in file %s: %d\n", input_filename, total_bits);
     printf("Total bits after compression: %d\n", compressed_bits + size * 8 + total_chars);
-   	 float compression_ratio = (float)(compressed_bits + size * 8 + total_chars) / total_bits;
+   	float compression_ratio = (float)(compressed_bits + size * 8 + total_chars) / total_bits;
     printf("Compression ratio: %.2f\n", compression_ratio);
 
 
@@ -206,79 +206,79 @@ else
 // Function to build the Huffman binary tree
 struct HfNode *build_hftree(char *data, int *freq)
 {
-struct HfNode **nodes = (struct HfNode **)malloc(MAX_CHAR * sizeof(struct HfNode *));
-int i = 0;
-int j = 0;
-while (i < MAX_CHAR)
-{
-if (freq[i] > 0)
-{
-nodes[j] = new_hfnode(data[i], freq[i]);
-j++;
-}
-i++;
-}
+    struct HfNode **nodes = (struct HfNode **)malloc(MAX_CHAR * sizeof(struct HfNode *));
+    int i = 0;
+    int j = 0;
+    while (i < MAX_CHAR)
+    {
+        if (freq[i] > 0)
+        {
+            nodes[j] = new_hfnode(data[i], freq[i]);
+            j++;
+        }
+    i++;
+    }
 
-int num_nodes = j;
+    int num_nodes = j;
 
-// Build Huffman binary tree
-while (num_nodes > 1)
-{
-    qsort(nodes, num_nodes, sizeof(struct HfNode *), compare_hfnodes);
+    // Build Huffman binary tree
+    while (num_nodes > 1)
+    {
+        qsort(nodes, num_nodes, sizeof(struct HfNode *), compare_hfnodes);
 
-    struct HfNode *left = nodes[0];
-    struct HfNode *right = nodes[1];
+        struct HfNode *left = nodes[0];
+        struct HfNode *right = nodes[1];
 
-    struct HfNode *parent = new_hfnode('\0', left->freq + right->freq);
-    parent->left = left;
-    parent->right = right;
+        struct HfNode *parent = new_hfnode('\0', left->freq + right->freq);
+        parent->left = left;
+        parent->right = right;
 
-    nodes[0] = parent;
-    nodes[1] = nodes[num_nodes - 1];
+        nodes[0] = parent;
+        nodes[1] = nodes[num_nodes - 1];
 
-    num_nodes--;
-}
+        num_nodes--;
+    }
 
-return nodes[0];
+    return nodes[0];
 
 }
 
 // Function to calculate the number of bits needed to compress the data using the Huffman binary tree
 int calc_compressed_bits(struct HfNode *root, int depth)
 {
-if (root == NULL)
-return 0;
+    if (root == NULL)
+    return 0;
 
-if (root->left == NULL && root->right == NULL)
-    return root->freq * depth;
+    if (root->left == NULL && root->right == NULL)
+        return root->freq * depth;
 
-return calc_compressed_bits(root->left, depth + 1) + calc_compressed_bits(root->right, depth + 1);
+    return calc_compressed_bits(root->left, depth + 1) + calc_compressed_bits(root->right, depth + 1);
 
 }
 
 // Function to find the Huffman code for each symbol in the binary tree and compress the data
 void find_hfcode(struct HfNode *root, char *code, int code_len, char *input, char *compressed)
 {
-if (root == NULL)
-return;
-
-// If node is a leaf node, add Huffman code to compressed data
-if (root->left == NULL && root->right == NULL)
-{
-    code[code_len] = '\0';
-    printf("%c: %s\n", root->symbol, code);
-    compressed[(int)root->symbol] = code_len;
-    strncpy(&compressed[(int)root->symbol + 1], code, code_len);
+    if (root == NULL)
     return;
-}
 
-// Traverse left child and add '0' to Huffman code
-code[code_len] = '0';
-find_hfcode(root->left, code, code_len + 1, input, compressed);
+    // If node is a leaf node, add Huffman code to compressed data
+    if (root->left == NULL && root->right == NULL)
+    {
+        code[code_len] = '\0';
+        printf("%c: %s\n", root->symbol, code);
+        compressed[(int)root->symbol] = code_len;
+        strncpy(&compressed[(int)root->symbol + 1], code, code_len);
+        return;
+    }
 
-// Traverse right child and add '1' to Huffman code
-code[code_len] = '1';
-find_hfcode(root->right, code, code_len + 1, input, compressed);
+    // Traverse left child and add '0' to Huffman code
+    code[code_len] = '0';
+    find_hfcode(root->left, code, code_len + 1, input, compressed);
+
+    // Traverse right child and add '1' to Huffman code
+    code[code_len] = '1';
+    find_hfcode(root->right, code, code_len + 1, input, compressed);
 
 }
 
