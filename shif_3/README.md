@@ -223,7 +223,7 @@ int calc_compressed_bits(struct HfNode *root, int depth)
 }
 ```
 ## Source Code
-```c
+```c++
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
