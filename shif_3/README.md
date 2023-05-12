@@ -1,6 +1,6 @@
-# sisop-praktikum-modul-2-2023-mhfg-it14
+# sisop-praktikum-modul-3-2023-mhfg-it14
 
-## Laporan Resmi Modul 2 Praktikum Sistem Operasi 2023
+## Laporan Resmi Modul 3 Praktikum Sistem Operasi 2023
 ---
 ### Kelompok ITA14:
 Aloysius Bataona Manullang - 5027211008  
