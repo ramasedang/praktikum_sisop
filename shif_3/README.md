@@ -204,9 +204,9 @@ Dan terakhir pada parent process, menghitung jumlah bit setelah dilakukan kompre
         close(fd2[0]);
 
 	printf("\nTotal bits in file %s: %d\n", input_filename, total_bits);
-    printf("Total bits after compression: %d\n", compressed_bits + size * 8 + total_chars);
+   	printf("Total bits after compression: %d\n", compressed_bits + size * 8 + total_chars);
    	float compression_ratio = (float)(compressed_bits + size * 8 + total_chars) / total_bits;
-    printf("Compression ratio: %.2f\n", compression_ratio);
+    	printf("Compression ratio: %.2f\n", compression_ratio);
 ```
 ```c
 // Function to calculate the number of bits needed to compress the data using the Huffman binary tree
@@ -343,9 +343,9 @@ int main(int argc, char *argv[])
         close(fd2[0]);
 
 	printf("\nTotal bits in file %s: %d\n", input_filename, total_bits);
-    printf("Total bits after compression: %d\n", compressed_bits + size * 8 + total_chars);
+   	printf("Total bits after compression: %d\n", compressed_bits + size * 8 + total_chars);
    	float compression_ratio = (float)(compressed_bits + size * 8 + total_chars) / total_bits;
-    printf("Compression ratio: %.2f\n", compression_ratio);
+   	printf("Compression ratio: %.2f\n", compression_ratio);
 
 
 }
