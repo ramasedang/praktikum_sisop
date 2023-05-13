@@ -1589,3 +1589,1265 @@ void sigintHandler(int sig_num) {
 [![overload.png](https://i.postimg.cc/cJ9SpLYn/overload.png)](https://postimg.cc/gwZQRdgz)
 ## Kendala
 dalam penggunaan semaphore cukup membingungkan tapi alhamdulillah bisa
+
+# Soal 4
+
+# Analisa Soal
+
+Pada soal ini, diminta untuk membuat 3 program dengan keterangan sebagai berikut : 
+
+## unzip.c
+Download dan ekstrak isi dari link yang diberikan di soal.
+## categorize.c
+Setelah menjalankan program untuk unzip, lakukan pemilahan file dengan ketentuan sebagai berikut : 
+    
+    1. Buatlah sebuah direktori bernama categorize yang berisikan subdirektori untuk menyimpan file dengan jenis 
+       extension yang terdapat dalam file extensions.txt. Untuk setiap subdirektori, hanya boleh menyimpan 10 
+       file maksimum kecuali untuk subdirektori other yang menyimpan semua file dengan jenis extension yang tidak terdapat didalam file extensions.txt 
+    2. Setelah program dirun, tampilkan jumlah file dengan extension yang valid (yang terdapat didalam extensions.txt) dan 
+       jumlah file yang terdapat dalam subdirektori other terurut secara ascending
+    3. Gunakan multithreading saat melakukan kategorisasi file
+    4. Tulis semua pemindahan, pembuatan, ataupun pengaksesan file / direktori kedalam sebuah txt file bernama log.txt 
+## logchecker.c  
+Ekstrak informasi yang terdapat didalam file log.txt untuk menghitung banyaknya akses untuk tiap file / direktori, menampilkan banyaknya total file tiap extension, dan membuat list seluruh folder yang telah dibuat dan banyaknya file yang dikumpulkan ke folder tersebut, terurut secara ascending.
+
+
+# Cara Pengerjaan
+
+## unzip
+Untuk melakukan unzip, digunakan library curl dan zip.h. Untuk kodenya adalah sebagai berikut : 
+
+```c
+int main()
+{
+    pid_t pid_download, pid_extract;
+    int status;
+
+    // Download hehe.zip
+    char *args_download[] = {"curl", "-L", "-o", "hehe.zip", "https://drive.google.com/u/0/uc?id=1rsR6jTBss1dJh2jdEKKeUyTtTRi_0fqp&export=download", NULL};
+    
+    pid_download = fork();
+
+    if (pid_download == -1)
+    {
+        printf("Error saat fork : \n");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid_download == 0)
+    { 
+        execvp(args_download[0], args_download);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+
+    waitpid(pid_download, &status, 0);
+
+    // Extract hehe.zip
+    char *args_extract[] = {"unzip", "hehe.zip", NULL};
+
+    pid_extract = fork();
+
+    if (pid_extract == -1)
+    {
+        printf("Error saat fork : \n");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid_extract == 0)
+    { 
+        execvp(args_extract[0], args_extract);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+
+    waitpid(pid_extract, &status, 0);
+
+    return 0;
+}
+```
+
+Pertama-tama dilakukan deklarasi dua pid yaitu pid_download dan pid_extract. Kemudian deklarasikan argumen yang akan dijalankan untuk melakukan download dan ekstrak isi dari file. Kemudian akan dilakukan fork terlebih dahulu sebelum menjalankan download, lalu argumen untuk extract akan dijalankan apabila proses download sudah selesai.
+## categorize
+Pertama-tama deklarasikan absolute path untuk folder files yang sudah didownload dan jenis extension yang valid.  
+
+```c
+char *extensions[] = {"jpg", "txt", "js", "py", "png", "emc", "xyz"};
+char *files_dir = "/home/reyhanqb/Documents/Shift 3/soal4/files";
+```
+Lalu dibuat fungsi untuk menulis log :
+```c
+ FILE *logchecker = fopen("log.txt", "a");
+
+    if (logchecker != NULL)
+    {
+        time(&current_time);
+        timeline = localtime(&current_time);
+
+        strftime(buff, sizeof(buff), "%d-%m-%Y %H:%M:%S", timeline);
+        fprintf(logchecker, "%s %s\n", buff, message);
+        fclose(logchecker);
+    }
+```
+Pertama-tama deklarasikan file log dengan nama logchecker, lalu buka file menggunakan fopen() append. 
+
+Kemudian, dibuat fungsi untuk melakukan kategorisasi file. Pertama-tama, fungsi akan mendeklarasikan variabel yang akan digunakan. Disini, dideklarasi variabel logs untuk menulis log didalam fungsi createLog()  
+
+```c
+ DIR *dir;
+ struct dirent *ent;
+ char current_dir[256];
+ strcpy(current_dir, dir_name);
+ char logs[512];
+```
+Kemudian, fungsi akan mencatat setiap pengaksesan file / direktori untuk ditulis kedalam file log.txt. Lalu dibuat kondisi yang bersifat rekursif untuk melakukan pengecekan jenis file dengan strchr, dan akan ditentukan apakah file yang diakses memiliki extension yang valid (ada didalam log.txt) atau tidak. Jenis extension dari file akan dilowercase kemudian dibandingkan dengan array extensions menggunakan strcmp untuk menentukan apakah file memiliki extension yang valid atau tidak. Apabila file tidak memiliki jenis extension yang valid, maka fungsi akan berhenti
+```c
+ snprintf(logs, sizeof(logs), "ACCESSED %s", current_dir);
+    createLog(logs);
+
+    if ((dir = opendir(current_dir)) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            if (ent->d_type == DT_REG)
+            {
+                char *validExtension = strrchr(ent->d_name, '.');
+                int validFiles = 0;
+                char valid_ext[256] = "other";
+
+                if (validExtension)
+                {
+                    validExtension++;
+                    strcpy(valid_ext, validExtension);
+
+                    for (char *p = valid_ext; *p; ++p)
+                    {
+                        *p = tolower(*p);
+                    }
+
+                    for (int i = 0; i < ext_size; i++)
+                    {
+                        if (strcmp(valid_ext, extensions[i]) == 0)
+                        {
+                            validFiles = 1;
+                            break;
+                        }
+                    }
+                }
+```
+Selanjutnya, apabila file tidak memiliki extension yang valid, maka file akan dipindahkan ke subdirektori other.
+```c
+if (!validFiles)
+                {
+                    snprintf(dest_folder, sizeof(dest_folder), "categorized/other");
+
+                    if (dest_folder == NULL)
+                    {
+                        mkdir(dest_folder, 0700);
+                    }
+
+                    snprintf(src, sizeof(src), "%s/%s", current_dir, ent->d_name);
+                    snprintf(dest, sizeof(dest), "%s/%s", dest_folder, ent->d_name);
+
+                    rename(src, dest);
+                    snprintf(logs, sizeof(logs), "MOVED %s file : %s > %s", valid_ext, src, dest);
+                    createLog(logs);
+                }
+                else
+                {
+                    snprintf(destination, sizeof(destination), "categorized/%s", valid_ext);
+
+                    struct stat st;
+                    if (stat(destination, &st) == -1)
+                    {
+                        mkdir(destination, 0700);
+                        snprintf(logs, sizeof(logs), "MADE %s", destination);
+                        createLog(logs);
+                    }
+
+                    int dirs = 1;
+                    strcpy(dest_folder, destination);
+```
+Kemudian, akan dijalankan sebuah loop untuk memastikan bahwa setiap subdirektori kecuali subdirektori other hanya memiliki maksimum 10 file saja. Hal ini dilakukan dengan mendeklarasikan variabel count++, yang dimana apabila jumlahnya kurang dari maksimum, akan berhenti untuk kemudian membuat direktori baru. Setelah pembuatan direktori baru, dipanggil fungsi createLog() untuk menulis log kedalam file log.txt.
+```c
+                    while (1)
+                    {
+                        DIR *dest_dir = opendir(dest_folder);
+                        int count = 0;
+
+                        if (dest_dir)
+                        {
+                            struct dirent *file_ent;
+                            while ((file_ent = readdir(dest_dir)) != NULL)
+                            {
+                                if (file_ent->d_type == DT_REG)
+                                {
+                                    count++;
+                                }
+                            }
+                            closedir(dest_dir);
+                        }
+
+                        if (count < maximum)
+                        {
+                            break;
+                        }
+
+                        dirs++;
+                        snprintf(dest_folder, sizeof(dest_folder), "%s (%d)", destination, dirs);
+                        if (stat(dest_folder, &st) == -1)
+                        {
+                            mkdir(dest_folder, 0700);
+                            snprintf(logs, sizeof(logs), "MADE %s", dest_folder);
+                            createLog(logs);
+                        }
+                    }
+
+                    snprintf(src, sizeof(src), "%s/%s", current_dir, ent->d_name);
+                    snprintf(dest, sizeof(dest), "%s/%s", dest_folder, ent->d_name);
+
+                    rename(src, dest);
+                    snprintf(logs, sizeof(logs), "MOVED %s file : %s > %s", valid_ext, src, dest);
+                    createLog(logs);
+                }
+            }
+
+```
+Apabila kedua kondisi diatas tidak terpenuhi, maka fungsi akan lanjut mengakses direktori yang ada, mengingat beberapa direktori didalam folder files punya banyak subdirektori. Proses ini akan dilakukan secara multithreading 
+```c
+ else if (ent->d_type == DT_DIR && ent->d_name[0] != '.')
+            {
+                
+                snprintf(subdir, sizeof(subdir), "%s/%s", current_dir, ent->d_name);
+
+                pthread_t thread;
+                pthread_create(&thread, NULL, categorizeFiles, (void *)subdir);
+                pthread_join(thread, NULL);
+            }
+        }
+        closedir(dir);
+    }
+
+```
+Selanjutnya dibuat fungsi untuk menghitung jumlah file yang terdapat didalam folder other. Didalam fungsi ini terdapat kondisional yang berjalan selama direktori masih memiliki file, maka variabel found akan diset menjadi 1 dan variabel count ditambahkan. loop akan terus berlanjut sampai tidak ada lagi file yang ditemukan, lalu fungsi akan mereturn nilai count.
+```c
+ int countOtherFiles(const char *current_dir_path)
+{
+    int count = 0;
+    int dirs = 1;
+    
+    strcpy(directory_path, current_dir_path);
+
+    while (true)
+    {
+        int found = 0;
+        DIR *dir;
+        struct dirent *ent;
+
+        if ((dir = opendir(directory_path)) != NULL)
+        {
+            while ((ent = readdir(dir)) != NULL)
+            {
+                if (ent->d_type == DT_REG)
+                {
+                    count++;
+                    found = 1;
+                }
+            }
+            closedir(dir);
+        }
+
+        if (!found)
+        {
+            break;
+        }
+
+        dirs++;
+        snprintf(directory_path, sizeof(directory_path), "%s (%d)", current_dir_path, dirs);
+    }
+
+    return count;
+}
+```
+Selanjutnya adalah fungsi untuk mencatat jumlah file untuk tiap extension. Cara kerja fungsi yaitu dengan membuat file temp.txt yang akan diisi dengan nama subdirektori dan file yang ditemukan dalam direktori categorized. Fungsi akan mencari karakter "." pada tiap subdirektori kemudian mencocokkannya dengan jenis extension yang valid, lalu print line untuk setiap subdirektori yang ditemukan, kemudian menghitung jumlah file untuk tiap extension satu persatu. Apabila sudah dilakukan perhitungan jumlah file, file temp.txt akan dihapus.
+```c
+void getAmountOfFiles(){
+       // Membuat file temp.txt untuk menyimpan output 'ls'
+    system("ls -R categorized > temp.txt");
+
+    // Membuka file sementara
+    FILE *temp_file = fopen("temp.txt", "r");
+    char line[256];
+
+    int png_count = 0;
+    int jpg_count = 0;
+    int emc_count = 0;
+    int xyz_count = 0;
+    int js_count = 0;
+    int py_count = 0;
+    int txt_count = 0;
+    int other_count = 0;
+
+    // Menghitung jumlah file setiap ekstensi dalam urutan ascending
+    while (fgets(line, sizeof(line), temp_file))
+    {
+        
+        line[strcspn(line, "\n")] = 0;
+
+        // Memeriksa apakah baris merupakan path direktori
+        if (line[strlen(line) - 1] == ':')
+        {
+            continue;
+        }
+        else
+        {
+            // Memeriksa apakah baris merupakan nama file atau direktori
+            char *file_name = strrchr(line, '/');
+            if (file_name != NULL)
+            {
+                file_name++;
+            }
+            else
+            {
+                file_name = line;
+            }
+
+            // Memeriksa apakah file memiliki ekstensi yang valid
+            int is_valid = 0;
+            int exist = 0;
+            for (int i = 0; i < ext_size; i++)
+            {
+                if (strstr(file_name, extensions[i]) != NULL)
+                {
+                    exist++;
+                    is_valid = 1;
+                    break;
+                }
+            }
+
+            // Menghitung jumlah file dengan jenis ekstensi yg valid
+            if (is_valid)
+            {
+                if (strstr(file_name, ".png") != NULL)
+                {
+                    png_count++;
+                }
+                else if (strstr(file_name, ".jpg") != NULL)
+                {
+                    jpg_count++;
+                }
+                else if (strstr(file_name, ".emc") != NULL)
+                {
+                    emc_count++;
+                }
+                else if (strstr(file_name, ".xyz") != NULL)
+                {
+                    xyz_count++;
+                }
+                else if (strstr(file_name, ".js") != NULL)
+                {
+                    js_count++;
+                }
+                else if (strstr(file_name, ".py") != NULL)
+                {
+                    py_count++;
+                }
+                else if (strstr(file_name, ".txt") != NULL)
+                {
+                    txt_count++;
+                }
+            }      
+        }
+    }
+
+    // Menampilkan hasil penghitungan
+    printf("Jumlah file txt: %d\n", txt_count);
+    printf("Jumlah file emc: %d\n", emc_count);
+    printf("Jumlah file jpg: %d\n", jpg_count);
+    printf("Jumlah file png: %d\n", png_count);
+    printf("Jumlah file js: %d\n", js_count);
+    printf("Jumlah file xyz: %d\n", xyz_count);
+    printf("Jumlah file py: %d\n", py_count);
+
+    // Menutup file sementara
+    fclose(temp_file);
+
+    // Menghapus file sementara
+    remove("temp.txt");
+}
+
+```
+Terakhir di fungsi main(), akan dibuat direktori categorized dan subdirektori other dan dicatat ke log.txt. 
+Apabila kategorisasi sudah selesai, 
+program akan print jumlah file tiap extension yang valid dan jumlah file dalam subdirektori other
+```c
+int main()
+{
+
+    pthread_t tid;
+
+    mkdir("categorized", 0700);
+    createLog("MADE categorized");
+
+    mkdir("categorized/other", 0700);
+    createLog("MADE categorized/other");
+
+    pthread_create(&tid, NULL, categorizeFiles, files_dir);
+    pthread_join(tid, NULL);
+
+    printf("Jumlah file : ");
+    getAmountOfFiles();    
+
+    int others = countOtherFiles("categorized/other");
+    printf("Jumlah isi subdirektori other: %d\n", others);
+
+    return 0;
+}
+```
+
+## logchecker
+Pada logchecker, digunakan dua fungsi untuk menghitung jumlah file untuk tiap extension yang valid dan jumlah isi dari direktori categorized. Fungsi yang digunakan sama dengan fungsi yang ada di kode categorize.c. Berikut ini adalah fungsi yang digunakan untuk menghitung isi subdirektori other 
+
+```c
+int countTotalFiles(const char *current_dir_path)
+{
+    int count = 0;
+    int dirs = 1;
+    
+    strcpy(directory_path, current_dir_path);
+
+    while (true)
+    {
+        int found = 0;
+        DIR *dir;
+        struct dirent *ent;
+
+        if ((dir = opendir(directory_path)) != NULL)
+        {
+            while ((ent = readdir(dir)) != NULL)
+            {
+                if (ent->d_type == DT_REG)
+                {
+                    count++;
+                    found = 1;
+                }
+            }
+            closedir(dir);
+        }
+
+        if (!found)
+        {
+            break;
+        }
+
+        dirs++;
+        snprintf(directory_path, sizeof(directory_path), "%s (%d)", current_dir_path, dirs);
+    }
+
+    return count;
+}
+
+```
+Kemudian, untuk menghitung jumlah file didalam tiap subdirektori juga digunakan fungsi yang sama dengan yang ada di categorize.c, namun ditambahkan variabel total untuk menghitung total file didalam direktori categorized.
+```c
+void getAmountOfFiles(){
+       // Membuat file temp.txt untuk menyimpan output 'ls'
+    system("ls -R categorized > temp.txt");
+
+    // Membuka file sementara
+    FILE *temp_file = fopen("temp.txt", "r");
+    char line[256];
+
+    int png_count = 0;
+    int jpg_count = 0;
+    int emc_count = 0;
+    int xyz_count = 0;
+    int js_count = 0;
+    int py_count = 0;
+    int txt_count = 0;
+    int other_count = 0;
+
+    // Menghitung jumlah file setiap ekstensi dalam urutan ascending
+    while (fgets(line, sizeof(line), temp_file))
+    {
+        
+        line[strcspn(line, "\n")] = 0;
+
+        // Memeriksa apakah baris merupakan path direktori
+        if (line[strlen(line) - 1] == ':')
+        {
+            continue;
+        }
+        else
+        {
+            // Memeriksa apakah baris merupakan nama file atau direktori
+            char *file_name = strrchr(line, '/');
+            if (file_name != NULL)
+            {
+                file_name++;
+            }
+            else
+            {
+                file_name = line;
+            }
+
+            // Memeriksa apakah file memiliki ekstensi yang valid
+            int is_valid = 0;
+            int exist = 0;
+            for (int i = 0; i < ext_size; i++)
+            {
+                if (strstr(file_name, extensions[i]) != NULL)
+                {
+                    exist++;
+                    is_valid = 1;
+                    break;
+                }
+            }
+
+            // Menghitung jumlah file dengan jenis ekstensi yg valid
+            if (is_valid)
+            {
+                if (strstr(file_name, ".png") != NULL)
+                {
+                    png_count++;
+                }
+                else if (strstr(file_name, ".jpg") != NULL)
+                {
+                    jpg_count++;
+                }
+                else if (strstr(file_name, ".emc") != NULL)
+                {
+                    emc_count++;
+                }
+                else if (strstr(file_name, ".xyz") != NULL)
+                {
+                    xyz_count++;
+                }
+                else if (strstr(file_name, ".js") != NULL)
+                {
+                    js_count++;
+                }
+                else if (strstr(file_name, ".py") != NULL)
+                {
+                    py_count++;
+                }
+                else if (strstr(file_name, ".txt") != NULL)
+                {
+                    txt_count++;
+                }
+            }      
+        }
+    }
+
+    // Menampilkan hasil penghitungan
+    printf("Jumlah file txt: %d\n", txt_count);
+    printf("Jumlah file emc: %d\n", emc_count);
+    printf("Jumlah file jpg: %d\n", jpg_count);
+    printf("Jumlah file png: %d\n", png_count);
+    printf("Jumlah file js: %d\n", js_count);
+    printf("Jumlah file xyz: %d\n", xyz_count);
+    printf("Jumlah file py: %d\n", py_count);
+
+    int others = countTotalFiles("categorized/other");
+
+    int total = others + txt_count + emc_count + jpg_count + png_count + js_count + xyz_count + py_count;
+
+
+    printf("Jumlah file dalam direktori categorize : %d\n", total);
+
+    // Menutup file sementara
+    fclose(temp_file);
+
+    // Menghapus file sementara
+    remove("temp.txt");
+}
+```
+Terakhir di dalam fungsi main(), kode akan membuka file log.txt dan mendeklarasikan variabel untuk menghitung jumlah akses, pemindahan, dan pembuatan tiap subdirektori ataupun files. Kode akan mencocokkan tiap line dengan kata ACCESSED, MADE, dan MOVED, lalu menambahkan jumlah count times_accessed, times_made, times_moved untuk menampilkan jumlah akses, pemindahan, ataupun pembuatan subdirektori / files di terminal.
+```c
+int main() {
+    char *log_file_name = "log.txt";
+    char *dir_path = "./categorized";
+
+    // Ekstrak isi file log.txt
+    FILE *log_file = fopen(log_file_name, "r");
+    if (log_file == NULL) {
+        printf("Gagal membuka file %s\n", log_file_name);
+        return 1;
+    }
+
+    int times_accessed = 0;
+    int times_made = 0;
+    int times_moved = 0;
+    while (fgets(line, sizeof(line), log_file)) {
+        if (strstr(line, "ACCESSED") != NULL) {
+            times_accessed++;
+        }
+        else if(strstr(line, "MADE") != NULL){
+            times_made++;
+        }
+        else if(strstr(line, "MOVED") != NULL){
+            times_moved++;
+        }
+    }
+    fclose(log_file);
+
+    // Hitung jumlah file di direktori
+    DIR *dir = opendir(dir_path);
+    if (dir == NULL) {
+        printf("Gagal membuka direktori %s\n", dir_path);
+        return 1;
+    }
+    
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {
+            file_count++;
+        }
+    }
+    closedir(dir);
+
+    printf("Jumlah ACCESSED pada direktori: %d\n", times_accessed);
+    printf("Jumlah MOVED pada direktori: %d\n", times_moved);
+    printf("Jumlah CREATED pada direktori: %d\n", times_made);
+    printf("Jumlah file untuk tiap extension : \n");
+    getAmountOfFiles();
+
+    return 0;
+}
+```
+# Source Code
+## unzip.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
+#include <dirent.h>
+#include <errno.h>
+#include <fnmatch.h>
+
+int main()
+{
+    pid_t pid_download, pid_extract;
+    int status;
+
+    // Download hehe.zip
+    char *args_download[] = {"curl", "-L", "-o", "hehe.zip", "https://drive.google.com/u/0/uc?id=1rsR6jTBss1dJh2jdEKKeUyTtTRi_0fqp&export=download", NULL};
+    
+    pid_download = fork();
+
+    if (pid_download == -1)
+    {
+        printf("Error saat fork : \n");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid_download == 0)
+    { 
+        execvp(args_download[0], args_download);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+
+    waitpid(pid_download, &status, 0);
+
+    // Extract hehe.zip
+    char *args_extract[] = {"unzip", "hehe.zip", NULL};
+
+    pid_extract = fork();
+
+    if (pid_extract == -1)
+    {
+        printf("Error saat fork : \n");
+        exit(EXIT_FAILURE);
+    }
+    else if (pid_extract == 0)
+    { 
+        execvp(args_extract[0], args_extract);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+
+    waitpid(pid_extract, &status, 0);
+
+    return 0;
+}
+```
+## categorize.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <stdbool.h>
+#include <pthread.h>
+#include <time.h>
+
+#define MAX_EXT_COUNT 100
+#define MAX_EXT_LEN 10
+
+char *extensions[] = {"jpg", "txt", "js", "py", "png", "emc", "xyz"};
+char *files_dir = "/home/reyhanqb/Documents/Shift 3/soal4/files";
+char *dir_name;
+
+int ext_size = sizeof(extensions) / sizeof(extensions[0]);
+const int maximum = 10;
+
+time_t current_time;
+struct tm *timeline;
+
+char buff[80], valid_dir[256];
+char src[256], dest[256];
+char subdir[256], destination[256], directory_path[256], dest_folder[256];
+
+char ext_list[MAX_EXT_COUNT][MAX_EXT_LEN]; // list ekstensi file yang akan diproses
+
+void createLog();
+
+void *categorizeFiles(void *dir_name)
+{
+    DIR *dir;
+    struct dirent *ent;
+    char current_dir[256];
+    strcpy(current_dir, dir_name);
+    char logs[512];
+
+    snprintf(logs, sizeof(logs), "ACCESSED %s", current_dir);
+    createLog(logs);
+
+    if ((dir = opendir(current_dir)) != NULL)
+    {
+        while ((ent = readdir(dir)) != NULL)
+        {
+            if (ent->d_type == DT_REG)
+            {
+                char *validExtension = strrchr(ent->d_name, '.');
+                int validFiles = 0;
+                char valid_ext[256] = "other";
+
+                if (validExtension)
+                {
+                    validExtension++;
+                    strcpy(valid_ext, validExtension);
+
+                    for (char *p = valid_ext; *p; ++p)
+                    {
+                        *p = tolower(*p);
+                    }
+
+                    for (int i = 0; i < ext_size; i++)
+                    {
+                        if (strcmp(valid_ext, extensions[i]) == 0)
+                        {
+                            validFiles = 1;
+                            break;
+                        }
+                    }
+                }
+
+                if (!validFiles)
+                {
+                    snprintf(dest_folder, sizeof(dest_folder), "categorized/other");
+
+                    if (dest_folder == NULL)
+                    {
+                        mkdir(dest_folder, 0700);
+                    }
+
+                    snprintf(src, sizeof(src), "%s/%s", current_dir, ent->d_name);
+                    snprintf(dest, sizeof(dest), "%s/%s", dest_folder, ent->d_name);
+
+                    rename(src, dest);
+                    snprintf(logs, sizeof(logs), "MOVED %s file : %s > %s", valid_ext, src, dest);
+                    createLog(logs);
+                }
+                else
+                {
+                    snprintf(destination, sizeof(destination), "categorized/%s", valid_ext);
+
+                    struct stat st;
+                    if (stat(destination, &st) == -1)
+                    {
+                        mkdir(destination, 0700);
+                        snprintf(logs, sizeof(logs), "MADE %s", destination);
+                        createLog(logs);
+                    }
+
+                    int dirs = 1;
+                    strcpy(dest_folder, destination);
+
+                    while (1)
+                    {
+                        DIR *dest_dir = opendir(dest_folder);
+                        int count = 0;
+
+                        if (dest_dir)
+                        {
+                            struct dirent *file_ent;
+                            while ((file_ent = readdir(dest_dir)) != NULL)
+                            {
+                                if (file_ent->d_type == DT_REG)
+                                {
+                                    count++;
+                                }
+                            }
+                            closedir(dest_dir);
+                        }
+
+                        if (count < maximum)
+                        {
+                            break;
+                        }
+
+                        dirs++;
+                        snprintf(dest_folder, sizeof(dest_folder), "%s (%d)", destination, dirs);
+                        if (stat(dest_folder, &st) == -1)
+                        {
+                            mkdir(dest_folder, 0700);
+                            snprintf(logs, sizeof(logs), "MADE %s", dest_folder);
+                            createLog(logs);
+                        }
+                    }
+
+                    snprintf(src, sizeof(src), "%s/%s", current_dir, ent->d_name);
+                    snprintf(dest, sizeof(dest), "%s/%s", dest_folder, ent->d_name);
+
+                    rename(src, dest);
+                    snprintf(logs, sizeof(logs), "MOVED %s file : %s > %s", valid_ext, src, dest);
+                    createLog(logs);
+                }
+            }
+            else if (ent->d_type == DT_DIR && ent->d_name[0] != '.')
+            {
+                
+                snprintf(subdir, sizeof(subdir), "%s/%s", current_dir, ent->d_name);
+
+                pthread_t thread;
+                pthread_create(&thread, NULL, categorizeFiles, (void *)subdir);
+                pthread_join(thread, NULL);
+            }
+        }
+        closedir(dir);
+    }
+
+    return NULL;
+}
+
+int countOtherFiles(const char *current_dir_path)
+{
+    int count = 0;
+    int dirs = 1;
+    
+    strcpy(directory_path, current_dir_path);
+
+    while (true)
+    {
+        int found = 0;
+        DIR *dir;
+        struct dirent *ent;
+
+        if ((dir = opendir(directory_path)) != NULL)
+        {
+            while ((ent = readdir(dir)) != NULL)
+            {
+                if (ent->d_type == DT_REG)
+                {
+                    count++;
+                    found = 1;
+                }
+            }
+            closedir(dir);
+        }
+
+        if (!found)
+        {
+            break;
+        }
+
+        dirs++;
+        snprintf(directory_path, sizeof(directory_path), "%s (%d)", current_dir_path, dirs);
+    }
+
+    return count;
+}
+
+void getAmountOfFiles(){
+       // Membuat file temp.txt untuk menyimpan output 'ls'
+    system("ls -R categorized > temp.txt");
+
+    // Membuka file sementara
+    FILE *temp_file = fopen("temp.txt", "r");
+    char line[256];
+
+    int png_count = 0;
+    int jpg_count = 0;
+    int emc_count = 0;
+    int xyz_count = 0;
+    int js_count = 0;
+    int py_count = 0;
+    int txt_count = 0;
+    int other_count = 0;
+
+    // Menghitung jumlah file setiap ekstensi dalam urutan ascending
+    while (fgets(line, sizeof(line), temp_file))
+    {
+        
+        line[strcspn(line, "\n")] = 0;
+
+        // Memeriksa apakah baris merupakan path direktori
+        if (line[strlen(line) - 1] == ':')
+        {
+            continue;
+        }
+        else
+        {
+            // Memeriksa apakah baris merupakan nama file atau direktori
+            char *file_name = strrchr(line, '/');
+            if (file_name != NULL)
+            {
+                file_name++;
+            }
+            else
+            {
+                file_name = line;
+            }
+
+            // Memeriksa apakah file memiliki ekstensi yang valid
+            int is_valid = 0;
+            int exist = 0;
+            for (int i = 0; i < ext_size; i++)
+            {
+                if (strstr(file_name, extensions[i]) != NULL)
+                {
+                    exist++;
+                    is_valid = 1;
+                    break;
+                }
+            }
+
+            // Menghitung jumlah file dengan jenis ekstensi yg valid
+            if (is_valid)
+            {
+                if (strstr(file_name, ".png") != NULL)
+                {
+                    png_count++;
+                }
+                else if (strstr(file_name, ".jpg") != NULL)
+                {
+                    jpg_count++;
+                }
+                else if (strstr(file_name, ".emc") != NULL)
+                {
+                    emc_count++;
+                }
+                else if (strstr(file_name, ".xyz") != NULL)
+                {
+                    xyz_count++;
+                }
+                else if (strstr(file_name, ".js") != NULL)
+                {
+                    js_count++;
+                }
+                else if (strstr(file_name, ".py") != NULL)
+                {
+                    py_count++;
+                }
+                else if (strstr(file_name, ".txt") != NULL)
+                {
+                    txt_count++;
+                }
+            }      
+        }
+    }
+
+    // Menampilkan hasil penghitungan
+    printf("Jumlah file txt: %d\n", txt_count);
+    printf("Jumlah file emc: %d\n", emc_count);
+    printf("Jumlah file jpg: %d\n", jpg_count);
+    printf("Jumlah file png: %d\n", png_count);
+    printf("Jumlah file js: %d\n", js_count);
+    printf("Jumlah file xyz: %d\n", xyz_count);
+    printf("Jumlah file py: %d\n", py_count);
+
+    // Menutup file sementara
+    fclose(temp_file);
+
+    // Menghapus file sementara
+    // remove("temp.txt");
+}
+
+void createLog(const char *message)
+{
+    FILE *logchecker = fopen("log.txt", "a");
+
+    if (logchecker != NULL)
+    {
+        time(&current_time);
+        timeline = localtime(&current_time);
+
+        strftime(buff, sizeof(buff), "%d-%m-%Y %H:%M:%S", timeline);
+        fprintf(logchecker, "%s %s\n", buff, message);
+        fclose(logchecker);
+    }
+}
+
+
+int main()
+{
+
+    pthread_t tid;
+
+    mkdir("categorized", 0700);
+    createLog("MADE categorized");
+
+    mkdir("categorized/other", 0700);
+    createLog("MADE categorized/other");
+
+    pthread_create(&tid, NULL, categorizeFiles, files_dir);
+    pthread_join(tid, NULL);
+
+    printf("Jumlah file : ");
+    getAmountOfFiles();    
+
+    int others = countOtherFiles("categorized/other");
+    printf("Jumlah isi subdirektori other: %d\n", others);
+
+    return 0;
+}
+
+```
+## logchecker.c
+```c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <dirent.h>
+#include <stdbool.h>
+#include <stddef.h>
+
+char line[1000], directory_path[1000];
+int file_count = 0;
+struct dirent *entry;
+
+char *extensions[] = {"jpg", "txt", "js", "py", "png", "emc", "xyz"};
+int ext_size = sizeof(extensions) / sizeof(extensions[0]);
+
+int countTotalFiles(const char *current_dir_path)
+{
+    int count = 0;
+    int dirs = 1;
+    
+    strcpy(directory_path, current_dir_path);
+
+    while (true)
+    {
+        int found = 0;
+        DIR *dir;
+        struct dirent *ent;
+
+        if ((dir = opendir(directory_path)) != NULL)
+        {
+            while ((ent = readdir(dir)) != NULL)
+            {
+                if (ent->d_type == DT_REG)
+                {
+                    count++;
+                    found = 1;
+                }
+            }
+            closedir(dir);
+        }
+
+        if (!found)
+        {
+            break;
+        }
+
+        dirs++;
+        snprintf(directory_path, sizeof(directory_path), "%s (%d)", current_dir_path, dirs);
+    }
+
+    return count;
+}
+
+void getAmountOfFiles(){
+       // Membuat file temp.txt untuk menyimpan output 'ls'
+    system("ls -R categorized > temp.txt");
+
+    // Membuka file sementara
+    FILE *temp_file = fopen("temp.txt", "r");
+    char line[256];
+
+    int png_count = 0;
+    int jpg_count = 0;
+    int emc_count = 0;
+    int xyz_count = 0;
+    int js_count = 0;
+    int py_count = 0;
+    int txt_count = 0;
+    int other_count = 0;
+
+    // Menghitung jumlah file setiap ekstensi dalam urutan ascending
+    while (fgets(line, sizeof(line), temp_file))
+    {
+        
+        line[strcspn(line, "\n")] = 0;
+
+        // Memeriksa apakah baris merupakan path direktori
+        if (line[strlen(line) - 1] == ':')
+        {
+            continue;
+        }
+        else
+        {
+            // Memeriksa apakah baris merupakan nama file atau direktori
+            char *file_name = strrchr(line, '/');
+            if (file_name != NULL)
+            {
+                file_name++;
+            }
+            else
+            {
+                file_name = line;
+            }
+
+            // Memeriksa apakah file memiliki ekstensi yang valid
+            int is_valid = 0;
+            int exist = 0;
+            for (int i = 0; i < ext_size; i++)
+            {
+                if (strstr(file_name, extensions[i]) != NULL)
+                {
+                    exist++;
+                    is_valid = 1;
+                    break;
+                }
+            }
+
+            // Menghitung jumlah file dengan jenis ekstensi yg valid
+            if (is_valid)
+            {
+                if (strstr(file_name, ".png") != NULL)
+                {
+                    png_count++;
+                }
+                else if (strstr(file_name, ".jpg") != NULL)
+                {
+                    jpg_count++;
+                }
+                else if (strstr(file_name, ".emc") != NULL)
+                {
+                    emc_count++;
+                }
+                else if (strstr(file_name, ".xyz") != NULL)
+                {
+                    xyz_count++;
+                }
+                else if (strstr(file_name, ".js") != NULL)
+                {
+                    js_count++;
+                }
+                else if (strstr(file_name, ".py") != NULL)
+                {
+                    py_count++;
+                }
+                else if (strstr(file_name, ".txt") != NULL)
+                {
+                    txt_count++;
+                }
+            }      
+        }
+    }
+
+    // Menampilkan hasil penghitungan
+    printf("Jumlah file txt: %d\n", txt_count);
+    printf("Jumlah file emc: %d\n", emc_count);
+    printf("Jumlah file jpg: %d\n", jpg_count);
+    printf("Jumlah file png: %d\n", png_count);
+    printf("Jumlah file js: %d\n", js_count);
+    printf("Jumlah file xyz: %d\n", xyz_count);
+    printf("Jumlah file py: %d\n", py_count);
+
+    int others = countTotalFiles("categorized/other");
+
+    int total = others + txt_count + emc_count + jpg_count + png_count + js_count + xyz_count + py_count;
+
+
+    printf("Jumlah file dalam direktori categorize : %d\n", total);
+
+    // Menutup file sementara
+    fclose(temp_file);
+
+    // Menghapus file sementara
+    remove("temp.txt");
+}
+
+
+int main() {
+    char *log_file_name = "log.txt";
+    char *dir_path = "./categorized";
+
+    // Ekstrak isi file log.txt
+    FILE *log_file = fopen(log_file_name, "r");
+    if (log_file == NULL) {
+        printf("Gagal membuka file %s\n", log_file_name);
+        return 1;
+    }
+
+    int times_accessed = 0;
+    int times_made = 0;
+    int times_moved = 0;
+    while (fgets(line, sizeof(line), log_file)) {
+        if (strstr(line, "ACCESSED") != NULL) {
+            times_accessed++;
+        }
+        else if(strstr(line, "MADE") != NULL){
+            times_made++;
+        }
+        else if(strstr(line, "MOVED") != NULL){
+            times_moved++;
+        }
+    }
+    fclose(log_file);
+
+    // Hitung jumlah file di direktori
+    DIR *dir = opendir(dir_path);
+    if (dir == NULL) {
+        printf("Gagal membuka direktori %s\n", dir_path);
+        return 1;
+    }
+    
+    while ((entry = readdir(dir)) != NULL) {
+        if (entry->d_type == DT_REG) {
+            file_count++;
+        }
+    }
+    closedir(dir);
+
+    printf("Jumlah ACCESSED pada direktori: %d\n", times_accessed);
+    printf("Jumlah MOVED pada direktori: %d\n", times_moved);
+    printf("Jumlah CREATED pada direktori: %d\n", times_made);
+    printf("Jumlah file untuk tiap extension : \n");
+    getAmountOfFiles();
+
+
+
+    return 0;
+}
+```
+# Test Output
+
+## unzip
+![unzip_run](https://github.com/reyhanqb/sisop-latihan/assets/107137535/0e512e53-fea5-4c04-82d7-54d4c9e760a5)
+## categorize
+![run_Categorize](https://github.com/reyhanqb/sisop-latihan/assets/107137535/059dbe59-b599-41bb-a066-f46fd5f91df7)
+![Screenshot (101)](https://github.com/reyhanqb/sisop-latihan/assets/107137535/c88abecf-0581-4880-89b4-74f4107b4838)
+![Screenshot (102)](https://github.com/reyhanqb/sisop-latihan/assets/107137535/78fa4962-6211-4293-a38d-9997e642ed8f)
+## logchecker
+![Screenshot 2023-05-13 133129](https://github.com/reyhanqb/sisop-latihan/assets/107137535/c467e868-90cc-4864-bb84-2fc4dfbe58fa)
+# Kendala
+Terdapat beberapa kendala saat melakukan kategorisasi files, karena banyak subdirektori dari folder files yang tidak menyimpan file sama sekali namun punya banyak subdirektori beruntun, contohnya seperti subdirektori count files. Selain itu beberapa kali fungsi countTotalFiles tidak memberikan output yang sesuai
+
+
