@@ -2840,13 +2840,13 @@ int main() {
 # Test Output
 
 ## unzip
-![unzip_run](https://github.com/reyhanqb/sisop-latihan/assets/107137535/0e512e53-fea5-4c04-82d7-54d4c9e760a5)
+![unzip_run](https://github.com/ramasedang/praktikum_sisop/assets/107137535/c753c387-b5ee-4aeb-85a7-143df64749b3)
 ## categorize
-![run_Categorize](https://github.com/reyhanqb/sisop-latihan/assets/107137535/059dbe59-b599-41bb-a066-f46fd5f91df7)
-![Screenshot (101)](https://github.com/reyhanqb/sisop-latihan/assets/107137535/c88abecf-0581-4880-89b4-74f4107b4838)
-![Screenshot (102)](https://github.com/reyhanqb/sisop-latihan/assets/107137535/78fa4962-6211-4293-a38d-9997e642ed8f)
+![run_Categorize](https://github.com/ramasedang/praktikum_sisop/assets/107137535/89d95e1a-e20d-4618-bc1d-8a03c79973fa)
+![Screenshot (101)](https://github.com/ramasedang/praktikum_sisop/assets/107137535/71466837-e476-4b17-b224-c9564118ac5f)
+![Screenshot (102)](https://github.com/ramasedang/praktikum_sisop/assets/107137535/63e112b8-ed9e-4017-8bd4-fa954f2a5367)
 ## logchecker
-![Screenshot 2023-05-13 133129](https://github.com/reyhanqb/sisop-latihan/assets/107137535/c467e868-90cc-4864-bb84-2fc4dfbe58fa)
+![Screenshot 2023-05-13 133129](https://github.com/ramasedang/praktikum_sisop/assets/107137535/eddbe952-f197-4390-a829-5b331f581a48)
 # Kendala
 Terdapat beberapa kendala saat melakukan kategorisasi files, karena banyak subdirektori dari folder files yang tidak menyimpan file sama sekali namun punya banyak subdirektori beruntun, contohnya seperti subdirektori count files. Selain itu beberapa kali fungsi countTotalFiles tidak memberikan output yang sesuai
 
