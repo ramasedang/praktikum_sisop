@@ -1,0 +1,6 @@
+version: '3'
+services:
+  storage-app:
+    image: ramasedang/storage-app:latest
+    deploy:
+      replicas: 5
