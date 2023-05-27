@@ -12,6 +12,7 @@
 #include <dirent.h>
 #include <sys/time.h>
 #include <libgen.h>
+#include <signal.h>
 
 
 // how to compile : gcc -D_FILE_OFFSET_BITS=64 rahasia.c -o rahasiat -lcrypto -lssl -lzip -lcurl -lfuse
@@ -22,8 +23,9 @@ static const char* mount_path = "/home/reyhanqb/Documents/shift4Bismillah/mount_
 
 char *extensions[] = {"png", "jpg", "pdf", "txt", "gif", "mp3"};
 int extension_size = sizeof(extensions) / sizeof(extensions[0]);
-int is_logged_in = 0;
 
+int is_logged_in = 0;
+int is_program_running = 1;
 
 struct User {
     char username[100];
@@ -35,10 +37,10 @@ void createTree()
     char cmd[256];
     snprintf(cmd, sizeof(cmd), "tree %s > result.txt", rahasia_path);
 
-    // Menjalankan perintah tree dan mengalihkan output ke file result.txt
+    // bikin tree
     int status = system(cmd);
 
-    // Memeriksa status keluaran dari perintah tree
+    // Memeriksa status setelah tree jadi
     if (WIFEXITED(status)) {
         int exit_status = WEXITSTATUS(status);
         if (exit_status != 0) {
@@ -96,6 +98,7 @@ void getAmountOfFiles() {
     int mp3_count = 0;
     int pdf_count = 0;
     int gif_count = 0;
+    int subdirectory_count = 0; 
 
     // Menghitung jumlah file setiap ekstensi dalam urutan ascending
     while (fgets(line, sizeof(line), temp_file)) {
@@ -103,6 +106,7 @@ void getAmountOfFiles() {
 
         // Memeriksa apakah baris merupakan path direktori
         if (line[strlen(line) - 1] == ':') {
+            subdirectory_count++;  // Increment subdirectory count
             continue;
         } else {
             // Memeriksa apakah baris merupakan nama file atau direktori
@@ -113,7 +117,7 @@ void getAmountOfFiles() {
                 file_name = line;
             }
 
-            // Memeriksa apakah file memiliki ekstensi yang valid
+            // Memeriksa apakah file memiliki ekstensi yang ada
             int is_valid = 0;
             int exist = 0;
             for (int i = 0; i < extension_size; i++) {
@@ -124,7 +128,7 @@ void getAmountOfFiles() {
                 }
             }
 
-            // Menghitung jumlah file dengan jenis ekstensi yang valid
+            // Menghitung jumlah file dengan jenis ekstensi yang ada
             if (is_valid) {
                 if (strstr(file_name, ".png") != NULL) {
                     png_count++;
@@ -143,21 +147,22 @@ void getAmountOfFiles() {
         }
     }
 
-    // Menuliskan hasil perhitungan ke dalam file teks
+    
     fprintf(result_file, "Jumlah file txt: %d\n", txt_count);
     fprintf(result_file, "Jumlah file gif: %d\n", gif_count);
     fprintf(result_file, "Jumlah file jpg: %d\n", jpg_count);
     fprintf(result_file, "Jumlah file png: %d\n", png_count);
     fprintf(result_file, "Jumlah file pdf: %d\n", pdf_count);
     fprintf(result_file, "Jumlah file mp3: %d\n", mp3_count);
+    fprintf(result_file, "Jumlah subdirectories: %d\n", subdirectory_count);  // jumlah subdir
 
-    // Menutup file sementara dan file hasil perhitungan
     fclose(temp_file);
     fclose(result_file);
 
-    // Menghapus file sementara
+    // Menghapus file temp
     remove("temp.txt");
 }
+
 
 
 static int xmp_readdir(const char *path, void *buf, fuse_fill_dir_t filler, off_t offset, struct fuse_file_info *fi)
@@ -235,24 +240,22 @@ static int xmp_rename(const char *from, const char *to)
         printf("Log in dulu bang");
     }
 
-    // Extract the folder or file name from 'from' path
+    // Ambil nama folder dari path awal
     char name[256];
     sscanf(from, "/%[^/]", name);
 
-    // Extract the group code from 'to' path
     char group_code[256];
     sscanf(to, "/%[^_]", group_code);
 
-    // Construct the new folder or file name with the desired format
+    // buat nama baru
     char new_name[256];
     sprintf(new_name, "/%s_%s", group_code, name);
 
-    // Construct the old and new paths
     char old_path[256];
     sprintf(old_path, "%s%s", rahasia_path, from);
 
     char new_path[256];
-    sprintf(new_path, "%s%s", rahasia_path, to); // Menggunakan 'to' secara langsung
+    sprintf(new_path, "%s%s", rahasia_path, to); 
 
     struct stat st;
     stat(old_path, &st);
@@ -265,7 +268,7 @@ static int xmp_rename(const char *from, const char *to)
             return -errno;
 
         // Rename folder recursively
-        DIR *dp = opendir(new_path); // Menggunakan 'new_path'
+        DIR *dp = opendir(new_path); 
         if (dp == NULL)
             return -errno;
 
@@ -287,7 +290,7 @@ static int xmp_rename(const char *from, const char *to)
 
         closedir(dp);
     } else {
-        // Create the parent directory of the new path if it doesn't exist
+        // Create parent directory 
         char parent_dir[256];
         strncpy(parent_dir, new_path, sizeof(parent_dir));
         parent_dir[sizeof(parent_dir) - 1] = '\0';
@@ -334,7 +337,7 @@ int registerUser(const char* username, const char* password) {
         return 0;
     }
 
-    // Cek apakah username sudah terdaftar
+    // Cek username
     struct User user;
     while (fscanf(file, "%[^;];%[^\n]\n", user.username, user.password) != EOF) {
         if (strcmp(username, user.username) == 0) {
@@ -365,28 +368,39 @@ int loginUser(const char* username, const char* password) {
     struct User user;
     while (fscanf(file, "%[^;];%[^\n]\n", user.username, user.password) != EOF) {
         if (strcmp(username, user.username) == 0) {
-            // Hashing password yang diinputkan untuk membandingkan dengan hashed password yang tersimpan
+            // Hashing password yang dibandingkan dengan hashed password dalam users.txt
             char* hashedPassword = md5Make(password);
             if (strcmp(hashedPassword, user.password) == 0) {
                 fclose(file);
                 return 1;  // Login berhasil
             }
-            break;  // Username ditemukan, tetapi password tidak cocok
+            break;  // Username ditemukan, tapi password salah
         }
     }
 
     fclose(file);
-    return 0;  // Username tidak ditemukan atau password tidak cocok
+    return 0;  // Username tidak ditemukan / password salah
 }
 
 int isFileDownloaded(const char* filename) {
     FILE* file = fopen(filename, "r");
     if (file) {
         fclose(file);
-        return 1;  // File exists
+        return 1;
     }
-    return 0;  // File doesn't exist
+    return 0; 
 }
+
+
+void termination_handler(int signum) {
+    is_program_running = 0;
+
+    createTree();
+    getAmountOfFiles();
+
+    exit(0);
+}
+
 
 char downloadAndUnzip(){
     if (isFileDownloaded("rahasia.zip")) {
@@ -397,15 +411,15 @@ char downloadAndUnzip(){
         strcat(cmd, url);
         strcat(cmd, "'");
 
-        system(cmd);  // Download the zip file
+        system(cmd);  // Download zip file
 
-        system("unzip rahasia.zip");  // Extract the zip file
+        system("unzip rahasia.zip");  // Extract zip
     }
 }
 
-int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        printf("mau login apa register bang? : %s <-reg|-login>\n", argv[0]);
+int main(int argc, char* argv[]) {
+    if (argc < 3) {
+        printf("Usage: %s <-reg|-login> <mount_point>\n", argv[0]);
         return 0;
     }
 
@@ -428,21 +442,27 @@ int main(int argc, char *argv[]) {
         scanf("%s", password);
         int loginStatus = loginUser(username, password);
         if (loginStatus == 1) {
-            int is_logged_in = 1;
+            is_logged_in = 1;
             printf("Login successful.\n");
-            createTree(); // Run createTree() when logged in
-            printf("Jumlah file total : ");
-            getAmountOfFiles(); // Run getAmountOfFiles() when logged in
-            return fuse_main(argc - 2, argv + 2, &xmp_oper, NULL);
-            // Lakukan tugas setelah login berhasil di sini...
+
+            // Set up the handler buat bikin tree dan extensions.txt
+            signal(SIGINT, termination_handler);
+
+            // Adjust the arguments for fuse_main()
+            argv[1] = argv[2]; 
+            argv++; 
+            argc--;
+
+            // Mount FUSE, sampai distop user (sementara masi ctrl c)
+            int fuse_res = fuse_main(argc, argv, &xmp_oper, NULL);
+
+            return fuse_res;
         } else {
             printf("Invalid username or password.\n");
             return 1;
-            // Lakukan tugas jika login gagal di sini...
         }
     } else {
-        printf("Invalid argument.\n");
+        printf("???.\n");
     }
-
-    umask(0);
 }
+
