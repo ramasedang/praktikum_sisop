@@ -6,61 +6,77 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-void akuUnzip(char *akuZipfile);
-
 #define Max_Line 1024
+
+void downloadDataset();
+void unzipFile(const char *zipfile);
+void processFile();
 
 int main()
 {
+    downloadDataset();
+    unzipFile("fifa-player-stats-database.zip");
+    processFile();
+
+    return 0;
+}
+
+void downloadDataset()
+{
     system("kaggle datasets download -d bryanb/fifa-player-stats-database");
-    char akuZipfile[] = "fifa-player-stats-database.zip";
+}
 
-    akuUnzip(akuZipfile);
+void unzipFile(const char *zipfile)
+{
+    char command[50];
+    snprintf(command, sizeof(command), "unzip %s", zipfile);
+    system(command);
+}
 
+void processFile()
+{
     FILE *file = fopen("FIFA23_official_data.csv", "r");
 
     if (!file)
     {
         printf("Could not open file\n");
-        return 1;
+        return;
     }
 
     char line[Max_Line];
-
-    fgets(line, sizeof(line), file);
+    fgets(line, sizeof(line), file); // Skip header line
 
     while (fgets(line, sizeof(line), file))
     {
-        char *token = strtok(line, ",");
-        char *id = token;
+        char *token;
+        char *id, *name, *age, *photo_url, *potential, *club;
+
+        if (line[strlen(line) - 1] == '\n')
+            line[strlen(line) - 1] = '\0'; // Remove newline character
+
+        token = strtok(line, ",");
+        id = token;
         token = strtok(NULL, ",");
-        char *name = token;
+        name = token;
         token = strtok(NULL, ",");
-        char *age = token;
+        age = token;
         token = strtok(NULL, ",");
-        char *photo_url = token;
+        //aaa
+        //a
+        //
+        photo_url = token;
         for (int i = 0; i < 4; i++)
             token = strtok(NULL, ",");
-        char *potential = token;
+        potential = token;
         token = strtok(NULL, ",");
-        char *club = token;
+        club = token;
 
         if (atoi(age) < 25 && atoi(potential) > 85 && strcmp(club, "Manchester City") != 0)
         {
-            printf("Name: %s\nClub: %s\nAge: %s\nPotential: %s\nPhoto URL: %s\n\n", name, club, age, potential, photo_url);
+            printf("LANJUT\n");
+            printf("iniNama: %s\niniClub: %s\niniAge: %s\niniPotential: %s\niniPhoto URL: %s\n\n", name, club, age, potential, photo_url);
         }
     }
 
     fclose(file);
-    return 0;
-}
-
-void akuUnzip(char *akuZipfile)
-{
-    char command[50];
-
-    strcpy(command, "akuUnzip ");
-    strcat(command, akuZipfile);
-
-    system(command);
 }
