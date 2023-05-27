@@ -1,0 +1,12 @@
+FAILED::27/05/2023-17:13:49::MKDIR::rxpkisoviet-Create ct2/.hidden.
+FAILED::27/05/2023-17:14:09::MKDIR::rxpkisoviet-Create ct2/.hidden.
+SUCCESS::27/05/2023-17:14:18::RENAME::rxpkisoviet-Rename ffrom /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/restricted_list to /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list
+SUCCESS::27/05/2023-17:14:30::MKDIR::rxpkisoviet-Create directory /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/projectMagang.
+SUCCESS::27/05/2023-17:14:47::RENAME::rxpkisoviet-Rename ffrom /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/filePenting to /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/restrictedFilePenting
+FAILED::27/05/2023-17:14:55::RENAME::rxpkisoviet-Rename from /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/restrictedFilePenting/ourProject.txt to /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/restrictedFilePenting/test.txt
+SUCCESS::27/05/2023-17:15:21::RENAME::rxpkisoviet-Rename ffrom /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/restrictedFilePenting to /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/bypass
+SUCCESS::27/05/2023-17:15:26::CREATE::rxpkisoviet-Create file /home/rxpkisoviet/Documents/.Trash-1000/info/ourProject.txt.trashinfo.
+SUCCESS::27/05/2023-17:15:26::CREATE::rxpkisoviet-Create file /home/rxpkisoviet/Documents/.Trash-1000/info/ourProject.txt.trashinfo.V0YR51.
+SUCCESS::27/05/2023-17:15:26::RMFILE::rxpkisoviet-Remove file /home/rxpkisoviet/Documents/.Trash-1000/info/ourProject.txt.trashinfo.V0YR51.
+SUCCESS::27/05/2023-17:15:26::RENAME::rxpkisoviet-Rename ffrom /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/bypass/ourProject.txt to /home/rxpkisoviet/Documents/.Trash-1000/files/ourProject.txt
+SUCCESS::27/05/2023-17:15:30::RENAME::rxpkisoviet-Rename ffrom /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/bypass to /home/rxpkisoviet/Documents/nanaxgerma/nanaxgerma/src_data/germaa/projects/bypass_list/restrictedFilePenting
