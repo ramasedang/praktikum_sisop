@@ -2,20 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <fcntl.h>
 #include <sys/types.h>
-#include <sys/stat.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <archive.h>
+#include <archive_entry.h>
 
 #define Max_Line 1024
 
 void downloadDataset();
-void unzipFile(const char *zipfile);
+void extractZipFile(const char *zipfile);
 void processFile();
 
 int main()
 {
     downloadDataset();
-    unzipFile("fifa-player-stats-database.zip");
+    extractZipFile("fifa-player-stats-database.zip");
     processFile();
 
     return 0;
@@ -23,14 +25,87 @@ int main()
 
 void downloadDataset()
 {
-    system("kaggle datasets download -d bryanb/fifa-player-stats-database");
+    char *args[] = {"/usr/local/bin/kaggle", "datasets", "download", "-d", "bryanb/fifa-player-stats-database", NULL};
+    pid_t pid = fork();
+    if (pid == 0)
+    {
+        execv(args[0], args);
+        _exit(EXIT_FAILURE);
+    }
+    else if (pid < 0)
+    {
+        perror("fork failed");
+    }
+    else
+    {
+        int status;
+        waitpid(pid, &status, 0);
+    }
 }
 
-void unzipFile(const char *zipfile)
+
+void extractZipFile(const char *zipfile)
 {
-    char command[50];
-    snprintf(command, sizeof(command), "unzip %s", zipfile);
-    system(command);
+    struct archive *a;
+    struct archive *ext;
+    struct archive_entry *entry;
+    int flags;
+    int r;
+
+    flags = ARCHIVE_EXTRACT_TIME;
+
+    a = archive_read_new();
+    archive_read_support_format_zip(a);
+    ext = archive_write_disk_new();
+    archive_write_disk_set_options(ext, flags);
+    archive_write_disk_set_standard_lookup(ext);
+    if ((r = archive_read_open_filename(a, zipfile, 10240)))
+        exit(1);
+    for (;;)
+    {
+        r = archive_read_next_header(a, &entry);
+        if (r == ARCHIVE_EOF)
+            break;
+        if (r != ARCHIVE_OK)
+            exit(1);
+        r = archive_write_header(ext, entry);
+        if (r != ARCHIVE_OK)
+            printf("error: %s\n", archive_error_string(ext));
+        else
+        {
+            copy_data(a, ext);
+            r = archive_write_finish_entry(ext);
+            if (r != ARCHIVE_OK)
+                exit(1);
+        }
+    }
+    archive_read_close(a);
+    archive_read_free(a);
+    archive_write_close(ext);
+    archive_write_free(ext);
+}
+
+void copy_data(struct archive *ar, struct archive *aw)
+{
+    int r;
+    const void *buff;
+    size_t size;
+    int64_t offset;
+
+    for (;;)
+    {
+        r = archive_read_data_block(ar, &buff, &size, &offset);
+        if (r == ARCHIVE_EOF)
+            return;
+        if (r != ARCHIVE_OK)
+            exit(1);
+        r = archive_write_data_block(aw, buff, size, offset);
+        if (r != ARCHIVE_OK)
+        {
+            printf("error: %s\n", archive_error_string(aw));
+            exit(1);
+        }
+    }
 }
 
 void processFile()
@@ -49,7 +124,7 @@ void processFile()
     while (fgets(line, sizeof(line), file))
     {
         char *token;
-        char *id, *name, *age, *photo_url, *potential, *club;
+        char *id, *name, *age, *photo_url, *nationality, *potential, *club;
 
         if (line[strlen(line) - 1] == '\n')
             line[strlen(line) - 1] = '\0'; // Remove newline character
@@ -61,11 +136,10 @@ void processFile()
         token = strtok(NULL, ",");
         age = token;
         token = strtok(NULL, ",");
-        //aaa
-        //a
-        //
         photo_url = token;
-        for (int i = 0; i < 4; i++)
+        token = strtok(NULL, ",");
+        nationality = token;
+        for (int i = 0; i < 3; i++)
             token = strtok(NULL, ",");
         potential = token;
         token = strtok(NULL, ",");
@@ -74,7 +148,8 @@ void processFile()
         if (atoi(age) < 25 && atoi(potential) > 85 && strcmp(club, "Manchester City") != 0)
         {
             printf("LANJUT\n");
-            printf("iniNama: %s\niniClub: %s\niniAge: %s\niniPotential: %s\niniPhoto URL: %s\n\n", name, club, age, potential, photo_url);
+            printf("---------Nama: %s\n---------Club: %s\n-Age: %s\nPotential: %s\nPhoto URL: %s\nNationality: %s\n\n", 
+                   name, club, age, potential, photo_url, nationality);
         }
     }
 
