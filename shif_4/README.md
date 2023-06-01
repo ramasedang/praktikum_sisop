@@ -524,6 +524,7 @@ static int xmp_create(const char *path, mode_t mode, struct fuse_file_info *fi)
 ```
 
 ## Test output
+Di bawah ini adalah test output dari logmucatatsini.txt :
 ![image](https://github.com/ramasedang/praktikum_sisop/assets/100351038/3ea67305-efca-42b2-8b63-a34ba12dacb2)
 
 
