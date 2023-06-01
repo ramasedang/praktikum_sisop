@@ -10,7 +10,7 @@ Moh. Sulthan Arief Rahmatullah - 5027211045
 
 ---
 ## Soal 2
-## Analisa soal:
+## Analisis soal:
 Pada soal diminta untuk melakukan program FUSE yang dapat melakukan operasi make folder, rename file dan folder, serta delete file dan folder, dengan  membuat sistem manajemen folder dengan aturan tertentu, seperti tidak dapat menghapus atau mengubah nama file/folder yang memiliki kata "restricted". Lalu untuk mehilangkan aturan tersebut. diperlukan kata "bypass".  Setiap kegiatan yang dilakukan harus tercatat dalam sebuah file logmucatatsini.txt dengan format nama seusai soal.
 
 ## Cara pengerjaan soal 1:
