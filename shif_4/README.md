@@ -1,10 +1,10 @@
 # sisop-praktikum-modul-4-2023-mhfg-it14
 
 ## Laporan Resmi Modul 4 Praktikum Sistem Operasi 2023
-# Soal 2
+# Soal 1
 ## Analisa soal:
 Kita disuruh untuk me print data CSV denga kriteria sesuai soal ditambah harus di build ke docker image
-## Cara pengerjaan soal 2:
+## Cara pengerjaan soal 1:
 Pertama kita haus membuat fungsi download
 ```c
 void downloadDataset()
