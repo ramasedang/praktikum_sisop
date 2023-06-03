@@ -16,10 +16,11 @@
 
 
 // how to compile : gcc -D_FILE_OFFSET_BITS=64 rahasia.c -o rahasiat -lcrypto -lssl -lzip -lcurl -lfuse
+// how to run : sudo ./rahasia <-login | -reg > <mount_point>
 
 static const char* rahasia_path = "/home/reyhanqb/Documents/shift4Bismillah/rahasia";
 static const char* user_path = "/home/reyhanqb/Documents/shift4Bismillah/users.txt";
-static const char* mount_path = "/home/reyhanqb/Documents/shift4Bismillah/mount_path";
+static const char* mount_path = "./mount_path";
 
 char *extensions[] = {"png", "jpg", "pdf", "txt", "gif", "mp3"};
 int extension_size = sizeof(extensions) / sizeof(extensions[0]);
@@ -397,6 +398,10 @@ void termination_handler(int signum) {
 
     createTree();
     getAmountOfFiles();
+    
+    char umount_cmd[256];
+    snprintf(umount_cmd, sizeof(umount_cmd), "umount -u %s", mount_path);
+    system(umount_cmd);
 
     exit(0);
 }
@@ -455,6 +460,12 @@ int main(int argc, char* argv[]) {
 
             // Mount FUSE, sampai distop user (sementara masi ctrl c)
             int fuse_res = fuse_main(argc, argv, &xmp_oper, NULL);
+
+            char umount_cmd[256];
+            snprintf(umount_cmd, sizeof(umount_cmd), "umount %s", mount_path);
+            system(umount_cmd);
+
+
 
             return fuse_res;
         } else {
