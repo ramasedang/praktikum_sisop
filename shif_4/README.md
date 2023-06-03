@@ -532,6 +532,7 @@ Di bawah ini adalah test output dari logmucatatsini.txt :
 Kendala dalam mengerjakan soal adalah kurang teliti sehingga sering terjadi kesalapahaman dengan soal.
 
 
+
 # Soal 5
 
 ## Analisis Soal
@@ -1502,9 +1503,16 @@ int main(int argc, char* argv[]) {
 
 # Test Output
 
+Output saat user register
 ![Register](https://github.com/ramasedang/praktikum_sisop/assets/107137535/4aacaa68-0364-4e76-8510-b384832dd6fe)
+
+Run saat user login
 ![Login](https://github.com/ramasedang/praktikum_sisop/assets/107137535/284c76e7-c4b5-41e2-bde3-5fa8107e0e33)
+
+Isi dari result.txt
 ![Output result.txt](https://github.com/ramasedang/praktikum_sisop/assets/107137535/a9bb6fa7-e7e3-4281-93e7-b90661659f44)
+
+Isi dari extensions.txt
 ![Output extensions.txt](https://github.com/ramasedang/praktikum_sisop/assets/107137535/1bf78e62-6edf-4290-9e4a-356bf479c5d8)
  
 # Kendala
