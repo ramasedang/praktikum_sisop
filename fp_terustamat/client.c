@@ -6,7 +6,6 @@
 #include <libgen.h>
 #include <sys/stat.h>
 
-
 struct User {
     char username[100];
     char password[100];
@@ -60,8 +59,8 @@ int loginUser(const char* username, const char* password) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 3) {
-        printf("Invalid format. Usage: sudo ./program [-login | -register] [username] [password]\n");
+    if (argc != 4) {
+        printf("Invalid format. Usage: ./program [-login | -register] [username] [password]\n");
         return 1;
     }
 
@@ -80,7 +79,7 @@ int main(int argc, char* argv[]) {
         }
     } else if (strcmp(mode, "-register") == 0) {
         if (geteuid() != 0) {
-            printf("Registration can only be done by sudo.\n");
+            printf("Registration can only be done by the root user.\n");
             return 1;
         }
         int result = registerUser(username, password);
@@ -98,7 +97,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     } else {
-        printf("Invalid mode. Usage: sudo ./program [-login | -register] [username] [password]\n");
+        printf("Invalid mode. Usage: ./program [-login | -register] [username] [password]\n");
         return 1;
     }
 }
