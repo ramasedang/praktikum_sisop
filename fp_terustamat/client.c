@@ -12,6 +12,11 @@ struct User {
 };
 
 int registerUser(const char* username, const char* password) {
+    if (geteuid() != 0) {
+        printf("Registration can only be done by the root user.\n");
+        return 0;
+    }
+
     FILE* file = fopen("users.txt", "a+");
     if (file == NULL) {
         printf("Failed to open users.txt file.\n");
@@ -20,7 +25,7 @@ int registerUser(const char* username, const char* password) {
 
     // Check username
     struct User user;
-    while (fscanf(file, "%[^;];%[^\n]\n", user.username, user.password) != EOF) {
+    while (fscanf(file, "CREATE USER %[^ ] IDENTIFIED BY %[^;];\n", user.username, user.password) == 2)  {
         if (strcmp(username, user.username) == 0) {
             printf("Username already exists.\n");
             fclose(file);
@@ -28,8 +33,7 @@ int registerUser(const char* username, const char* password) {
         }
     }
 
-    // Store username and hashed password in the file
-    fprintf(file, "%s;%s\n", username, password);
+    fprintf(file, "CREATE USER %s IDENTIFIED BY %s;\n", username, password);
     fclose(file);
 
     printf("User registered successfully.\n");
@@ -59,25 +63,30 @@ int loginUser(const char* username, const char* password) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        printf("Invalid format. Usage: ./program [-login | -register] [username] [password]\n");
+    if (argc < 4) {
+        printf("Invalid format. Usage:\n");
+        printf("For registration: sudo ./program CREATE USER [username] IDENTIFIED BY [password]\n");
+        printf("For login: ./program -login -u [username] -p [password]\n");
         return 1;
     }
 
     const char* mode = argv[1];
-    const char* username = argv[2];
-    const char* password = argv[3];
+    const char* username = NULL;
+    const char* password = NULL;
 
-    if (strcmp(mode, "-login") == 0) {
-        int result = loginUser(username, password);
-        if (result == 1) {
-            printf("Login successful.\n");
-            return 0;
-        } else {
-            printf("Invalid credentials.\n");
-            return 1;
-        }
-    } else if (strcmp(mode, "-register") == 0) {
+    if (strcmp(mode, "CREATE") == 0 && strcmp(argv[2], "USER") == 0 && argc >= 6) {
+        username = argv[3];
+        password = argv[5];
+    }
+
+    if (username == NULL || password == NULL) {
+        printf("Invalid format. Usage:\n");
+        printf("For registration: sudo ./program CREATE USER [username] IDENTIFIED BY [password]\n");
+        printf("For login: ./program -login -u [username] -p [password]\n");
+        return 1;
+    }
+
+    if (strcmp(mode, "CREATE") == 0 && strcmp(argv[2], "USER") == 0) {
         if (geteuid() != 0) {
             printf("Registration can only be done by the root user.\n");
             return 1;
@@ -96,8 +105,19 @@ int main(int argc, char* argv[]) {
             printf("Failed to register user.\n");
             return 1;
         }
+    } else if (strcmp(mode, "-login") == 0) {
+        int result = loginUser(username, password);
+        if (result == 1) {
+            printf("Logged in as %s.\n", username);
+            return 0;
+        } else {
+            printf("Invalid credentials.\n");
+            return 1;
+        }
     } else {
-        printf("Invalid mode. Usage: ./program [-login | -register] [username] [password]\n");
+        printf("Invalid mode. Usage:\n");
+        printf("For registration: sudo ./program CREATE USER [username] IDENTIFIED BY [password]\n");
+        printf("For login: ./program -login -u [username] -p [password]\n");
         return 1;
     }
 }

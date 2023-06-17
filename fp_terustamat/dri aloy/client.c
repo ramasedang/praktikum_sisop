@@ -20,7 +20,7 @@ struct User {
 
 int registerUser(const char* username, const char* password) {
     if (geteuid() != 0) {
-        printf("Registration can only be done by sudo.\n");
+        printf("Registration can only be done by the root user.\n");
         return 0;
     }
 
@@ -32,7 +32,7 @@ int registerUser(const char* username, const char* password) {
 
     // Check username
     struct User user;
-    while (fscanf(file, "%[^;];%[^\n]\n", user.username, user.password) != EOF) {
+    while (fscanf(file, "CREATE USER %[^ ] IDENTIFIED BY %[^;];\n", user.username, user.password) == 2)  {
         if (strcmp(username, user.username) == 0) {
             printf("Username already exists.\n");
             fclose(file);
@@ -40,13 +40,13 @@ int registerUser(const char* username, const char* password) {
         }
     }
 
-    // Store username and hashed password in the file
-    fprintf(file, "%s;%s\n", username, password);
+    fprintf(file, "CREATE USER %s IDENTIFIED BY %s;\n", username, password);
     fclose(file);
 
     printf("User registered successfully.\n");
     return 1;
 }
+
 
 int loginUser(const char* username, const char* password) {
     FILE* file = fopen("users.txt", "r");
@@ -77,6 +77,7 @@ int main()
     struct sockaddr_in server_address;
     char buffer[BUFFER_SIZE] = {0};
     bool isLoggedIn = false;
+    char loggedInUsername[100];
 
     // Create socket
     if ((client_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0)
@@ -119,22 +120,36 @@ int main()
                 if (loginUser(username, password)) {
                     printf("Login successful.\n");
                     isLoggedIn = true;
+                    strcpy(loggedInUsername, username);  // Save the logged-in username
                 } else {
                     printf("Invalid credentials. Please try again.\n");
                 }
             } else if (strcmp(option, "register\n") == 0) {
                 // Registration process
+                char input[100];
+
+                printf("Format: 'CREATE USER [username] IDENTIFIED BY [password]': ");
+                fgets(input, sizeof(input), stdin);
+
+                // Remove trailing newline character
+                input[strcspn(input, "\n")] = '\0';
+
+                // Check if the format is correct
+                char createKeyword[100];
+                char userKeyword[100];
+                char identifiedByKeyword[100];
                 char username[100];
                 char password[100];
-                printf("Enter username: ");
-                fgets(username, sizeof(username), stdin);
-                printf("Enter password: ");
-                fgets(password, sizeof(password), stdin);
+                if (sscanf(input, "%s %s %s %s %s", createKeyword, userKeyword, username, identifiedByKeyword, password) != 5 ||
+                    strcmp(createKeyword, "CREATE") != 0 ||
+                    strcmp(userKeyword, "USER") != 0 ||
+                    strcmp(identifiedByKeyword, "IDENTIFIED") != 0 ||
+                    strcmp(password, "BY") != 0) {
+                    printf("Invalid format. Usage: CREATE USER [username] IDENTIFIED BY [password]\n");
+                    continue;
+                }
 
-                // Remove trailing newline characters
-                username[strcspn(username, "\n")] = '\0';
-                password[strcspn(password, "\n")] = '\0';
-
+                // Register the user
                 if (registerUser(username, password)) {
                     printf("User registered successfully.\n");
 
@@ -144,14 +159,17 @@ int main()
                         return 1;
                     }
                     isLoggedIn = true;
+                    strcpy(loggedInUsername, username);  // Save the logged-in username
                 } else {
                     printf("Failed to register user.\n");
                 }
             } else {
                 printf("Invalid option. Please try again.\n");
             }
-        } else {
+        } else if(isLoggedIn) {
             // User is logged in
+            printf("LOGGED IN AS %s\n", loggedInUsername);
+
             // Send command to the server
             char command[100];
             printf("Enter command: ");
