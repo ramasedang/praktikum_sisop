@@ -360,11 +360,26 @@ int main()
                 }
             }
         }
-        else if (strcmp(token, "USE") == 0)
+         else if (strcmp(token, "USE") == 0)
         {
             token = strtok(NULL, " ");
-            strcpy(databaseName, token); // Set active database name
-            printf("Database selected: %s\n", databaseName);
+            if (token == NULL)
+            {
+                printf("Please specify a database name.\n");
+            }
+            else if (strcmp(databaseName, "") != 0 && strcmp(databaseName, token) != 0)
+            {
+                printf("Error: Database '%s' does not exist or is not active.\n", token);
+            }
+            else if (access(token, F_OK) != 0)
+            {
+                printf("Error: Database '%s' does not exist.\n", token);
+            }
+            else
+            {
+                strcpy(databaseName, token); // Set active database name
+                printf("Database selected: %s\n", databaseName);
+            }
         }
         else if (strcmp(token, "DROP") == 0)
             {
