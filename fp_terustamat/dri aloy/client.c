@@ -174,7 +174,11 @@ int main()
             char command[100];
             printf("Enter command: ");
             fgets(command, sizeof(command), stdin);
-
+            // Remove trailing newline if present
+            if (command[strlen(command) - 1] == '\n') {
+                strtok(command, "\n");
+            }
+            
             // Send the command to the server
             send(client_socket, command, strlen(command), 0);
 
