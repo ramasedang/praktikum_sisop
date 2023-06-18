@@ -25,25 +25,19 @@ void createDatabase(const char *databaseName)
 }
 
 void createTable(const char *databaseName, const char *tableName, char *columns[], char *types[])
-{
-    char filename[100];
-    sprintf(filename, "%s/%s.json", databaseName, tableName);
-    json_t *json_obj = json_object();
-    for (int i = 0; columns[i] != NULL; i++)
     {
-        char key[100];
-        snprintf(key, sizeof(key), "%s", columns[i]);
-        char value[100];
-        snprintf(value, sizeof(value), "%s", types[i]);
-        json_object_set_new(json_obj, key, json_string(value));
+        char filename[100];
+        sprintf(filename, "%s/%s.json", databaseName, tableName);
+        json_t *json_arr = json_array();
+        json_t *column_info = json_object();
+        for (int i = 0; columns[i] != NULL; i++)
+        {
+            json_object_set_new(column_info, columns[i], json_string(types[i]));
+        }
+        json_array_append_new(json_arr, column_info);
+        json_dump_file(json_arr, filename, 0);
+        json_decref(json_arr);
     }
-    char* json_str = json_dumps(json_obj, JSON_INDENT(4));
-    FILE* file = fopen(filename, "w");
-    fprintf(file, "%s\n", json_str);
-    fclose(file);
-    free(json_str);
-    json_decref(json_obj);
-}
 
 
 void dropDatabase(const char *databaseName)
