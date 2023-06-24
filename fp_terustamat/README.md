@@ -404,6 +404,10 @@ jelaskan kode di atas
 ```
 Pertama-tama, fungsi membuka database dengan menggunakan opendir() dan membaca setiap isi di dalamnya dengan menggunakan readdir(). Jika file yang sedang dibaca merupakan file regular, maka fungsi akan memuat isi file tersebut sebagai objek JSON menggunakan json_load_file() dari pustaka cJSON. Setelah itu, fungsi akan melakukan pengecekan tabel apakah objek JSON merupakan array atau bukan menggunakan json_is_array(). Jika bukan array, maka fungsi akan mencetak pesan error dan mengembalikan nilai kosong. Jika objek JSON merupakan array, maka fungsi akan membuat tabel dengan nama sesuai dengan nama file (di sini dilakukan substrings pada nama file untuk menghilangkan ekstensi .json), melakukan ```DROP TABLE``` lama (jika ada) serta mengekspor semua data dari file menuju kedalam sql file backup. Fungsi akan menuliskan ```CREATE TABLE``` statement ke dalam file backup dengan menggunakan fprintf() untuk menampilkan atribut-atribut kolom. Kemudian, saat melakukan iterasi pada array JSON, fungsi akan melakukan loop untuk setiap objek JSON dan menuliskan ```INSERT INTO``` statement ke dalam file backup. Semua query  yang ditulis ke file backup. Terakhir, fungsi akan menutup direktori dengan menggunakan closedir().
 
+Setelah dilakukan dump.c, lalu dilakukan ```crontab -e ``` dengan perintah cron ``` 0 * * * * ``` pada file path dump.c, seperti contoh di bawah ini : 
+``` 0 * * * * /home/reyhanqb/Documents/sisopmain/praktikum_sisop/fp_terustamat/dump.c```
+Perintah cron 0 * * * * menjalankan tugas secara berkala setiap jam pada menit ke-0 (nol) atau tepatnya pada awal dari setiap jam. Sehingga program dump akan menjalankan tugas secara berkala setiap jam pada menit ke-0 (nol) atau tepatnya pada awal dari setiap jam.
+
 ## Source code
 client.c
 ```c
@@ -1452,7 +1456,7 @@ int main()
 ![10](https://github.com/ramasedang/praktikum_sisop/assets/100351038/c5e87cbc-50bf-4c08-af10-19f8a7c3f2d7)
 
 ## Kendala
-
+Kendala dalam pengerjaan adalah kesulitan dalam pembagian tugas dalam kelompok sehingga menyebabkan tim tidak efektif dalam menyelesaikan soal. Lalu pengerjaan untuk membuat fungsi WHERE pada Data Manipulation Language sulit untuk diselesaikan.
 
 
 
